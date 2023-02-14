@@ -1,4 +1,7 @@
 old_feeder.py
 secret.py
+notes.txt
 venv/
+conky_assets/
 .idea/
+__pycache__/
