@@ -9,7 +9,7 @@ class Get_Data:
     """Get values from my database.
     Construct a nice print.
      Parse into two files.
-    Conky app will run concatenate (cat) those to the files"""
+    Conky app will run concatenate (cat) the files"""
 
     def __init__(self, request: str) -> None:
         self.data = {}
@@ -17,11 +17,13 @@ class Get_Data:
         self.table = None
         self.column = None
         self.msg = None
-        self.weather()
-        # if request == "weather":
-        #    self.weather()
+        self.data = self.collect_data()
+        self.parse_data()
 
-    def weather(self):
+    def parse_data(self):
+        print("Hej")
+
+    def collect_data(self):
         d = {}
         self.db_name = "website"
         self.column = "temperature"
@@ -37,21 +39,29 @@ class Get_Data:
         self.table = tn + "outside"
         d['outside'] = self.fetcher()
         self.column = "*"
-        d['all'] = self.fetcher()
+        all_w = self.fetcher()
 
-        d['tot_entires'] = d['all'][0]
-        d['ts'] = d['all'][1]
-        d['outside'] = d['all'][3]
-        d['wind_speed'] = d['all'][9]
-        d['wind_deg'] = d['all'][10]
-        d['cloud'] = d['all'][12]
-        d['sunrise'] = d['all'][13]
-        d['sunset'] = d['all'][14]
-        d['status'] = d['all'][15]
-        for x in d:
-            print(x, ":", d[x])
-        #print(d)
-        pass
+        d['tot_entires'] = all_w[0]
+        d['ts'] = all_w[1]
+        d['outside'] = all_w[3]
+        d['wind_speed'] = all_w[9]
+        d['wind_deg'] = all_w[10]
+        d['cloud'] = all_w[12]
+        d['sunrise'] = all_w[13]
+        d['sunset'] = all_w[14]
+        d['status'] = all_w[15]
+
+        self.table = "currency_rate"
+        d['euro'] = self.fetcher()[0]
+
+        self.db_name = "slicemenice"
+        self.table = "Bitcoin"
+        d['btc'] = self.fetcher()[0]
+
+        #for x in d:
+        #    print(x, ":", d[x])
+
+        return d
 
     def fetcher(self):
         h, u, p = secret.sql()
