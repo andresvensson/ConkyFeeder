@@ -1,9 +1,15 @@
 import pymysql
+import os.path
 import datetime as dt
+
+import secret
 import secret as s
 
-
 # write a text file for Conky to cat
+
+
+# Config
+print_all_values = False
 
 
 class Get_Data:
@@ -13,7 +19,9 @@ class Get_Data:
     Conky app will run concatenate (cat) the files"""
 
     def __init__(self, request: str) -> None:
+        self.old_data = {}
         self.data = {}
+        # self.old_data = {'old': True, 'ts': None}
         self.db_name = None
         self.table = None
         self.column = None
@@ -21,16 +29,20 @@ class Get_Data:
 
         self.currency_enabled()
         self.data = self.collect_data()
+        if print_all_values:
+            self.print_data()
         self.parse_data()
 
     def parse_data(self):
-        print("data:\nKey : Value : Datatype\n")
-        for x in self.data:
-            print(x, ":", self.data[x], ":", type(self.data[x]))
+        # TODO
+
+        self.msg = self.data['ts']
+        self.writefile("created.txt")
 
     # TODO
-    def writefile(self):
-        with open("conky_assets/" + str(self.table) + ".txt", "w") as f:
+    def writefile(self, filename):
+        # also make created file (so I can determine if its old data)
+        with open(secret.file_path() + str(filename) + ".txt", "w") as f:
             f.write(str(self.msg))
 
     def collect_data(self):
@@ -86,7 +98,7 @@ class Get_Data:
         try:
             c.execute(self.sql_query())
             sql_data = c.fetchone()
-            #print("Raw data:", sql_data)
+            # print("Raw data:", sql_data)
             c.close()
 
         except pymysql.Error as e:
@@ -126,17 +138,27 @@ class Get_Data:
             print("No")
             return False
 
-
+    def old_data(self):
+        # TODO
+        print("Check status, return dict")
+        log_file = secret.file_path() + "created.txt"
+        if os.path.isfile(log_file):
+            self.old_data['old'] = True
+            with open(log_file, "r") as file:
+                ts = dt.datetime.fromtimestamp(file.read())
+                self.old_data['ts'] = ts
+        else:
+            self.old_data['old'] = False
 
     def print_data(self):
-        return self.data
-
-
+        print("data:\nKey : Value : Datatype\n")
+        for x in self.data:
+            print(x, ":", self.data[x], ":", type(self.data[x]))
 
 
 def start():
     print("call Weather")
-    #init = Get_Data("weather")
+    # init = Get_Data("weather")
     Get_Data("weather")
     # TODO
     # run code as a systemd service (systemctl)
