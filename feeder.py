@@ -1,5 +1,5 @@
 import pymysql
-import secret
+import secret as s
 
 
 # write a text file for Conky to cat
@@ -21,22 +21,24 @@ class Get_Data:
         self.parse_data()
 
     def parse_data(self):
-        print("Hej")
+        print("data:\nKey : Value : Datatype\n")
+        for x in self.data:
+            print(x, ":", self.data[x], ":", type(self.data[x]))
 
     def collect_data(self):
         d = {}
-        self.db_name = "website"
-        self.column = "temperature"
+        self.db_name = s.db_name1()
+        self.column = s.column1()
         tn = "weather_"
-        self.table = tn + "datarum"
+        self.table = tn + s.table1()
         d['datarum'] = self.fetcher()[0]
-        self.table = tn + "sovrum"
+        self.table = tn + s.table2()
         d['sovrum'] = self.fetcher()[0]
-        self.table = tn + "kitchen"
+        self.table = tn + s.table3()
         d['kitchen'] = self.fetcher()[0]
 
         # return msg
-        self.table = tn + "outside"
+        self.table = tn + s.table4()
         d['outside'] = self.fetcher()
         self.column = "*"
         all_w = self.fetcher()
@@ -44,27 +46,30 @@ class Get_Data:
         d['tot_entires'] = all_w[0]
         d['ts'] = all_w[1]
         d['outside'] = all_w[3]
+        d['humidity'] = all_w[4]
+        d['snow_1'] = all_w[5]
+        d['snow_3h'] = all_w[6]
+        d['rain_1h'] = all_w[7]
+        d['rain_3h'] = all_w[8]
         d['wind_speed'] = all_w[9]
         d['wind_deg'] = all_w[10]
+        d['gust'] = all_w[11]
         d['cloud'] = all_w[12]
         d['sunrise'] = all_w[13]
         d['sunset'] = all_w[14]
         d['status'] = all_w[15]
 
-        self.table = "currency_rate"
+        self.table = s.table5()
         d['euro'] = self.fetcher()[0]
 
-        self.db_name = "slicemenice"
-        self.table = "Bitcoin"
+        self.db_name = s.db_name2()
+        self.table = s.table6()
         d['btc'] = self.fetcher()[0]
-
-        #for x in d:
-        #    print(x, ":", d[x])
 
         return d
 
     def fetcher(self):
-        h, u, p = secret.sql()
+        h, u, p = s.sql()
         db = pymysql.connect(host=h, user=u, passwd=p, db=self.db_name)
         c = db.cursor()
         sql_data = None
@@ -72,6 +77,7 @@ class Get_Data:
         try:
             c.execute(self.sql_query())
             sql_data = c.fetchone()
+            print("Raw data:", sql_data)
             c.close()
 
         except pymysql.Error as e:
