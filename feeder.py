@@ -1,4 +1,5 @@
 import pymysql
+import datetime as dt
 import secret as s
 
 
@@ -17,6 +18,8 @@ class Get_Data:
         self.table = None
         self.column = None
         self.msg = None
+
+        self.currency_enabled()
         self.data = self.collect_data()
         self.parse_data()
 
@@ -24,6 +27,11 @@ class Get_Data:
         print("data:\nKey : Value : Datatype\n")
         for x in self.data:
             print(x, ":", self.data[x], ":", type(self.data[x]))
+
+    # TODO
+    def writefile(self):
+        with open("conky_assets/" + str(self.table) + ".txt", "w") as f:
+            f.write(str(self.msg))
 
     def collect_data(self):
         d = {}
@@ -59,8 +67,9 @@ class Get_Data:
         d['sunset'] = all_w[14]
         d['status'] = all_w[15]
 
-        self.table = s.table5()
-        d['euro'] = self.fetcher()[0]
+        if self.currency_enabled:
+            self.table = s.table5()
+            d['euro'] = self.fetcher()[0]
 
         self.db_name = s.db_name2()
         self.table = s.table6()
@@ -77,7 +86,7 @@ class Get_Data:
         try:
             c.execute(self.sql_query())
             sql_data = c.fetchone()
-            print("Raw data:", sql_data)
+            #print("Raw data:", sql_data)
             c.close()
 
         except pymysql.Error as e:
@@ -102,24 +111,27 @@ class Get_Data:
         else:
             return "SELECT {} FROM {} ORDER BY value_id DESC LIMIT 1".format(self.column, self.table)
 
+    def currency_enabled(self):
+        # only get values between certain time (db updates 08:05 and 17:05)
+        # except if no data / old data
+        timenow = dt.datetime.now().time()
+        print("\ntimenow:", timenow)
+        if dt.time(7, 45) < timenow < dt.time(8, 30):
+            print("yes")
+            return True
+        elif dt.time(16, 45) < timenow < dt.time(17, 30):
+            print("yes")
+            return True
+        else:
+            print("No")
+            return False
+
+
+
     def print_data(self):
         return self.data
 
 
-def writefile(self):
-    with open("conky_assets/" + self.table + ".txt", "w") as f:
-        f.write(str(self.msg))
-
-
-# class Rates(Get_Data):
-#    def __init__(self):
-#        super().__init__(self, instructions, database, column, table)
-#        print("subclass")
-#        database = "website"
-#        column = "temperature"
-#        table = ""
-#        sql_query = "SELECT {} FROM {} ORDER BY value_id DESC LIMIT 1".format(column, table)
-#        pass
 
 
 def start():
@@ -127,9 +139,9 @@ def start():
     #init = Get_Data("weather")
     Get_Data("weather")
     # TODO
-    # Just skip the weather method. Collect all data in one go
-    # Parse and render two files
-    # Rename class and methods
+    # run code as a systemd service (systemctl)
+    # Collect all data in one go (collect rates only if no data or old data)
+    # Parse and render two files (weather.txt, economy.txt)
 
 
 if __name__ == "__main__":
