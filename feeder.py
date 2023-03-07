@@ -93,10 +93,10 @@ class Get_Data:
             pass
 
     def sql_query(self):
-        if self.table == "currency_rate":
+        if self.table == s.table5():
             return "SELECT Rate, Currency, time FROM currency_rate WHERE Currency='SEK' ORDER BY time DESC LIMIT 1"
 
-        if self.table == "Bitcoin":
+        if self.table == s.table6():
             return "SELECT {} FROM {} ORDER BY Time DESC LIMIT 1".format(self.column, self.table)
 
         else:
