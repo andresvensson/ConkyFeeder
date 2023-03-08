@@ -1,3 +1,5 @@
+import datetime
+
 import pymysql
 import os.path
 import datetime as dt
@@ -19,15 +21,13 @@ class Get_Data:
     Conky app will run concatenate (cat) the files"""
 
     def __init__(self, request: str) -> None:
-        self.old_data = {}
+        self.old_data = self.old_data()
         self.data = {}
-        # self.old_data = {'old': True, 'ts': None}
         self.db_name = None
         self.table = None
         self.column = None
         self.msg = None
 
-        self.currency_enabled()
         self.data = self.collect_data()
         if print_all_values:
             self.print_data()
@@ -35,11 +35,11 @@ class Get_Data:
 
     def parse_data(self):
         # TODO
+        print("old data?", self.old_data, self.old_data['ts'])
 
         self.msg = self.data['ts']
-        self.writefile("created.txt")
+        self.writefile("created")
 
-    # TODO
     def writefile(self, filename):
         # also make created file (so I can determine if its old data)
         with open(secret.file_path() + str(filename) + ".txt", "w") as f:
@@ -79,7 +79,9 @@ class Get_Data:
         d['sunset'] = all_w[14]
         d['status'] = all_w[15]
 
+        self.currency_enabled()
         if self.currency_enabled:
+            # TODO, add dollar
             self.table = s.table5()
             d['euro'] = self.fetcher()[0]
 
@@ -125,30 +127,37 @@ class Get_Data:
 
     def currency_enabled(self):
         # only get values between certain time (db updates 08:05 and 17:05)
-        # except if no data / old data
+        # except if no data or old data in files
         timenow = dt.datetime.now().time()
-        print("\ntimenow:", timenow)
         if dt.time(7, 45) < timenow < dt.time(8, 30):
-            print("yes")
             return True
         elif dt.time(16, 45) < timenow < dt.time(17, 30):
-            print("yes")
+            return True
+        elif self.old_data['old']:
             return True
         else:
-            print("No")
             return False
 
     def old_data(self):
-        # TODO
-        print("Check status, return dict")
+        og = {'old': bool, 'ts': datetime.datetime, 'age': int}
         log_file = secret.file_path() + "created.txt"
         if os.path.isfile(log_file):
-            self.old_data['old'] = True
             with open(log_file, "r") as file:
-                ts = dt.datetime.fromtimestamp(file.read())
-                self.old_data['ts'] = ts
+                ts = dt.datetime.strptime(file.read(), '%Y-%m-%d %H:%M:%S')
+                og['ts'] = ts
+                dur = dt.datetime.now() - ts
+                duration = round((dur.total_seconds() / 60))
+                og['age'] = duration
+                # check if data older than 15 min and return True/False statement
+                if duration > 15:
+                    og['old'] = True
+                else:
+                    og['old'] = False
         else:
-            self.old_data['old'] = False
+            og['old'] = True
+            og['ts'] = None
+            print("No files previous files created at:", log_file)
+        return og
 
     def print_data(self):
         print("data:\nKey : Value : Datatype\n")
@@ -161,9 +170,11 @@ def start():
     # init = Get_Data("weather")
     Get_Data("weather")
     # TODO
-    # run code as a systemd service (systemctl)
+    #
     # Collect all data in one go (collect rates only if no data or old data)
+    # add energy prices
     # Parse and render two files (weather.txt, economy.txt)
+    # run code as a systemd service (systemctl), add wait times
 
 
 if __name__ == "__main__":
