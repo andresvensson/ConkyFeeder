@@ -196,7 +196,7 @@ class Get_Data:
 def start():
     print("call Weather")
     # init = Get_Data("weather")
-    Get_Data("weather")
+Get_Data("weather")
     # TODO
     #
     # add energy prices (?)
