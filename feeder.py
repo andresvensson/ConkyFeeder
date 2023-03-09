@@ -28,17 +28,42 @@ class Get_Data:
         self.column = None
         self.msg = None
 
+        # TODO, while True loop?
         self.data = self.collect_data()
         if print_all_values:
             self.print_data()
         self.parse_data()
 
     def parse_data(self):
-        # TODO
-        print("old data?", self.old_data, self.old_data['ts'])
+        e = self.parse_economy()
+        w = self.parse_weather()
 
-        self.msg = self.data['ts']
-        self.writefile("created")
+        if e and w:
+            # print("old data?", self.old_data, self.old_data['ts'])
+            self.msg = self.data['ts']
+            self.writefile("created")
+        else:
+            print("Error writing files")
+
+    def parse_economy(self):
+        try:
+            # TODO add weekday and week number
+            l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
+            l2 = "1 BTC = " + str(self.data['btc'] + " USD")
+            l3 = "TS in DB: " + str(self.old_data['ts']) + " (" + str(self.old_data['age']) + " min old)"
+            self.msg = l1 + "\n" + l2 + "\n" + l3
+            self.writefile("economy")
+            return True
+
+        except Exception as e:
+            self.msg = "Error:" + str(e)
+            self.writefile("economy")
+            return False
+
+    def parse_weather(self):
+        # TODO
+        print("Hej")
+        return True
 
     def writefile(self, filename):
         # also make created file (so I can determine if its old data)
@@ -51,17 +76,17 @@ class Get_Data:
         self.column = s.column1()
         tn = "weather_"
         self.table = tn + s.table1()
-        d['datarum'] = self.fetcher()[0]
+        d['datarum'] = self.fetcher()[0][0]
         self.table = tn + s.table2()
-        d['sovrum'] = self.fetcher()[0]
+        d['sovrum'] = self.fetcher()[0][0]
         self.table = tn + s.table3()
-        d['kitchen'] = self.fetcher()[0]
+        d['kitchen'] = self.fetcher()[0][0]
 
         # return msg
         self.table = tn + s.table4()
         d['outside'] = self.fetcher()
         self.column = "*"
-        all_w = self.fetcher()
+        all_w = self.fetcher()[0]
 
         d['tot_entires'] = all_w[0]
         d['ts'] = all_w[1]
@@ -81,13 +106,15 @@ class Get_Data:
 
         self.currency_enabled()
         if self.currency_enabled:
-            # TODO, add dollar
             self.table = s.table5()
-            d['euro'] = self.fetcher()[0]
+            # euro to sek/usd
+            all_cur = self.fetcher()
+            d['usd'] = all_cur[0][1]
+            d['sek'] = all_cur[1][1]
 
         self.db_name = s.db_name2()
         self.table = s.table6()
-        d['btc'] = self.fetcher()[0]
+        d['btc'] = self.fetcher()[0][0]
 
         return d
 
@@ -99,7 +126,7 @@ class Get_Data:
 
         try:
             c.execute(self.sql_query())
-            sql_data = c.fetchone()
+            sql_data = c.fetchall()
             # print("Raw data:", sql_data)
             c.close()
 
@@ -117,7 +144,8 @@ class Get_Data:
 
     def sql_query(self):
         if self.table == s.table5():
-            return "SELECT Rate, Currency, time FROM currency_rate WHERE Currency='SEK' ORDER BY time DESC LIMIT 1"
+            return "SELECT Currency, Rate, time FROM currency_rate WHERE Currency='SEK' " \
+                   "OR Currency='USD' ORDER BY time DESC LIMIT 2"
 
         if self.table == s.table6():
             return "SELECT {} FROM {} ORDER BY Time DESC LIMIT 1".format(self.column, self.table)
@@ -149,7 +177,7 @@ class Get_Data:
                 duration = round((dur.total_seconds() / 60))
                 og['age'] = duration
                 # check if data older than 15 min and return True/False statement
-                if duration > 15:
+                if duration > 20:
                     og['old'] = True
                 else:
                     og['old'] = False
@@ -160,7 +188,7 @@ class Get_Data:
         return og
 
     def print_data(self):
-        print("data:\nKey : Value : Datatype\n")
+        print("data:\nKey : Value : Datatype")
         for x in self.data:
             print(x, ":", self.data[x], ":", type(self.data[x]))
 
@@ -171,8 +199,7 @@ def start():
     Get_Data("weather")
     # TODO
     #
-    # Collect all data in one go (collect rates only if no data or old data)
-    # add energy prices
+    # add energy prices (?)
     # Parse and render two files (weather.txt, economy.txt)
     # run code as a systemd service (systemctl), add wait times
 
