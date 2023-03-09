@@ -1,4 +1,5 @@
 import datetime
+import time
 
 import pymysql
 import os.path
@@ -11,7 +12,8 @@ import secret as s
 
 
 # Config
-print_all_values = False
+print_all_values = True
+loop_code = False
 
 
 class Get_Data:
@@ -29,6 +31,7 @@ class Get_Data:
         self.msg = None
 
         # TODO, while True loop?
+
         self.data = self.collect_data()
         if print_all_values:
             self.print_data()
@@ -194,14 +197,34 @@ class Get_Data:
 
 
 def start():
-    print("call Weather")
-    # init = Get_Data("weather")
-Get_Data("weather")
+    print("Feeder program starts")
+
+    # TODO this loop is broken
+    # just check when last run was made
+    # if old, fetch new data
+    # now it loops whole code every 5th seconds
+    while loop_code:
+        x = Get_Data("weather")
+        timer = x.old_data
+        calc = 15 - x.old_data['age']
+        print("age:", x.old_data['age'], "execute in", calc)
+        time.sleep(5)
+        #if timer['age'] > 15:
+        if timer['age'] > 8:
+            print(timer['age'])
+            Get_Data("weather")
+        else:
+            time.sleep(5)
+    else:
+        Get_Data("weather")
+        pass
+
     # TODO
     #
     # add energy prices (?)
     # Parse and render two files (weather.txt, economy.txt)
     # run code as a systemd service (systemctl), add wait times
+
 
 
 if __name__ == "__main__":
