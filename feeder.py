@@ -12,8 +12,8 @@ import secret as s
 
 
 # Config
-print_all_values = True
-loop_code = False
+print_all_values = False
+loop_code = True
 
 
 class Get_Data:
