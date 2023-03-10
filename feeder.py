@@ -22,8 +22,8 @@ class Get_Data:
      Parse into two files.
     Conky app will run concatenate (cat) the files"""
 
-    def __init__(self, request: str) -> None:
-        self.old_data = self.old_data()
+    def __init__(self, old_data: dict) -> None:
+        self.old_data = old_data
         self.data = {}
         self.db_name = None
         self.table = None
@@ -50,12 +50,13 @@ class Get_Data:
 
     def parse_economy(self):
         try:
-            # TODO add weekday and week number
+            # TODO add weekday and week number, remove age min old
             l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
             l2 = "1 BTC = " + str(self.data['btc'] + " USD")
-            l3 = "TS in DB: " + str(self.old_data['ts']) + " (" + str(self.old_data['age']) + " min old)"
+            l3 = "TS in DB: " + str(self.data['ts'])
             self.msg = l1 + "\n" + l2 + "\n" + l3
             self.writefile("economy")
+            print("Created economy.txt")
             return True
 
         except Exception as e:
@@ -65,7 +66,7 @@ class Get_Data:
 
     def parse_weather(self):
         # TODO
-        print("Hej")
+        # print("Hej")
         return True
 
     def writefile(self, filename):
@@ -164,31 +165,11 @@ class Get_Data:
             return True
         elif dt.time(16, 45) < timenow < dt.time(17, 30):
             return True
-        elif self.old_data['old']:
+        # or if it's older than 5 hours
+        elif self.old_data['age_min'] > 5 * 60:
             return True
         else:
             return False
-
-    def old_data(self):
-        og = {'old': bool, 'ts': datetime.datetime, 'age': int}
-        log_file = secret.file_path() + "created.txt"
-        if os.path.isfile(log_file):
-            with open(log_file, "r") as file:
-                ts = dt.datetime.strptime(file.read(), '%Y-%m-%d %H:%M:%S')
-                og['ts'] = ts
-                dur = dt.datetime.now() - ts
-                duration = round((dur.total_seconds() / 60))
-                og['age'] = duration
-                # check if data older than 15 min and return True/False statement
-                if duration > 20:
-                    og['old'] = True
-                else:
-                    og['old'] = False
-        else:
-            og['old'] = True
-            og['ts'] = None
-            print("No files previous files created at:", log_file)
-        return og
 
     def print_data(self):
         print("data:\nKey : Value : Datatype")
@@ -203,20 +184,24 @@ def start():
     # just check when last run was made
     # if old, fetch new data
     # now it loops whole code every 5th seconds
+
+    old_data = pre_data()
     while loop_code:
-        x = Get_Data("weather")
-        timer = x.old_data
-        calc = 15 - x.old_data['age']
-        print("age:", x.old_data['age'], "execute in", calc)
-        time.sleep(5)
-        #if timer['age'] > 15:
-        if timer['age'] > 8:
-            print(timer['age'])
-            Get_Data("weather")
+        # pre_data changes the old statement after 15 min
+        if old_data['old']:
+            print("Get new data")
+            Get_Data(old_data)
         else:
-            time.sleep(5)
+            pass
+        old_data = pre_data()
+        sleep = (15 * 60) - (old_data['age'] - 4)
+        # no negative integers for sleep command pls
+        if sleep <= 0:
+            sleep = 0
+        print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
+        time.sleep(sleep)
     else:
-        Get_Data("weather")
+        Get_Data(old_data)
         pass
 
     # TODO
@@ -225,6 +210,29 @@ def start():
     # Parse and render two files (weather.txt, economy.txt)
     # run code as a systemd service (systemctl), add wait times
 
+
+def pre_data():
+    og = {'old': bool, 'ts': datetime.datetime, 'age': int}
+    log_file = secret.file_path() + "created.txt"
+    if os.path.isfile(log_file):
+        with open(log_file, "r") as file:
+            ts = dt.datetime.strptime(file.read(), '%Y-%m-%d %H:%M:%S')
+            og['ts'] = ts
+            dur = dt.datetime.now() - ts
+            age_sek = dur.total_seconds()
+            age_min = round(age_sek / 60)
+            og['age'] = age_sek
+            og['age_min'] = age_min
+            # check if data is older than 15 min and 3 sec, return True/False statement
+            if age_sek > (15 * 60 + 3):
+                og['old'] = True
+            else:
+                og['old'] = False
+    else:
+        og['old'] = True
+        og['ts'] = None
+        print("No files previous files created at:", log_file)
+    return og
 
 
 if __name__ == "__main__":
