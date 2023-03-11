@@ -13,7 +13,7 @@ import secret as s
 
 # Config
 print_all_values = False
-loop_code = True
+loop_code = False
 
 
 class Get_Data:
@@ -29,8 +29,6 @@ class Get_Data:
         self.table = None
         self.column = None
         self.msg = None
-
-        # TODO, while True loop?
 
         self.data = self.collect_data()
         if print_all_values:
@@ -66,7 +64,61 @@ class Get_Data:
 
     def parse_weather(self):
         # TODO
-        # print("Hej")
+        #left_alignment = "Left Text"
+        #right_alignment = str(self.data['kitchen']) + " °C Kitchen"
+        #l1 = f"{left_alignment : <20}{right_alignment : >20}"
+        #print("Aligned text?\n", l1)
+
+        def formatter(row):
+            tot = 54
+
+            c2 = len(row[1])
+            # c1 = 54 - (c2 + len(row[0]))
+            #l = len(row[0])
+            #calc = 54 - (c2 + l)
+
+            # TODO
+            # c1 = 54 - c2
+            # just leave the code running holder
+            c1 = 52 - c2
+
+            print("Row width:", c1, "+", c2, " sum:", c1 + c2)
+
+            format_line = "{: <" + str(c1) + "}{: >" + str(c2) + "}\n"
+            return format_line
+
+        d = self.data
+
+        x = str(d['status']) + ", clouds: " + str(d['cloud']) + "%"
+        # r1c1 = ((" " * 20) - len(x))
+        r1c1 = str(d['status']) + ", clouds: " + str(d['cloud']) + " %"
+        r2c1 = "wind speed: " + str(d['wind_speed']) + " deg: " + str(d['wind_deg'])
+        r3c1 = "Empty"
+        r4c1 = "This is a very long sentence."
+
+        txt = [
+            [r1c1, "Kitchen: " + str(d['kitchen']) + "°C"],
+            [r2c1, "Datarum: " + str(d['datarum']) + "°C"],
+            [r3c1, "  Lowes: " + str(d['sovrum']) + "°C"],
+            [r4c1, "Outside: " + str(d['outside']) + "°C"]
+        ]
+
+        c1 = str(38)
+        c2 = str(16)
+
+        format_line = "{: <" + str(c1) + "}{: >" + str(c2) + "}"
+
+        # 37 + 15 ?
+        self.msg = ""
+        for row in txt:
+            #    |37     | 8 | 6|
+            format_line = formatter(row)
+            #print(format_line)
+            self.msg = self.msg + format_line.format(*row)
+
+        self.writefile("weather")
+        print("Created weather.txt")
+
         return True
 
     def writefile(self, filename):
@@ -208,7 +260,6 @@ def start():
     #
     # add energy prices (?)
     # Parse and render two files (weather.txt, economy.txt)
-    # run code as a systemd service (systemctl), add wait times
 
 
 def pre_data():
