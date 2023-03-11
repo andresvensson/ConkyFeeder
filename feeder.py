@@ -13,7 +13,7 @@ import secret as s
 
 # Config
 print_all_values = False
-loop_code = False
+loop_code = True
 
 
 class Get_Data:
@@ -37,7 +37,8 @@ class Get_Data:
 
     def parse_data(self):
         e = self.parse_economy()
-        w = self.parse_weather()
+        #w = self.parse_weather()
+        w = True
 
         if e and w:
             # print("old data?", self.old_data, self.old_data['ts'])
@@ -99,7 +100,7 @@ class Get_Data:
         txt = [
             [r1c1, "Kitchen: " + str(d['kitchen']) + "°C"],
             [r2c1, "Datarum: " + str(d['datarum']) + "°C"],
-            [r3c1, "  Lowes: " + str(d['sovrum']) + "°C"],
+            [r3c1, "Lowes: " + str(d['sovrum']) + "°C"],
             [r4c1, "Outside: " + str(d['outside']) + "°C"]
         ]
 
@@ -217,9 +218,12 @@ class Get_Data:
             return True
         elif dt.time(16, 45) < timenow < dt.time(17, 30):
             return True
-        # or if it's older than 5 hours
-        elif self.old_data['age_min'] > 5 * 60:
-            return True
+        elif 'age_min' in self.old_data:
+            # check age threshold
+            if self.old_data['age_min'] > 5 * 60:
+                return True
+            else:
+                return False
         else:
             return False
 
