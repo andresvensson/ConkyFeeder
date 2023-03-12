@@ -37,11 +37,10 @@ class Get_Data:
 
     def parse_data(self):
         e = self.parse_economy()
-        #w = self.parse_weather()
-        w = True
+        w = self.parse_weather()
+        #w = True
 
         if e and w:
-            # print("old data?", self.old_data, self.old_data['ts'])
             self.msg = self.data['ts']
             self.writefile("created")
         else:
@@ -64,37 +63,21 @@ class Get_Data:
             return False
 
     def parse_weather(self):
-        # TODO
-        #left_alignment = "Left Text"
-        #right_alignment = str(self.data['kitchen']) + " °C Kitchen"
-        #l1 = f"{left_alignment : <20}{right_alignment : >20}"
-        #print("Aligned text?\n", l1)
-
-        def formatter(row):
-            tot = 54
-
-            c2 = len(row[1])
-            # c1 = 54 - (c2 + len(row[0]))
-            #l = len(row[0])
-            #calc = 54 - (c2 + l)
-
-            # TODO
-            # c1 = 54 - c2
-            # just leave the code running holder
-            c1 = 52 - c2
-
-            print("Row width:", c1, "+", c2, " sum:", c1 + c2)
-
-            format_line = "{: <" + str(c1) + "}{: >" + str(c2) + "}\n"
-            return format_line
+        def formatter(line):
+            c2 = len(line[1])
+            c1 = 54 - c2
+            format_string = "{: <" + str(c1) + "}{: >" + str(c2) + "}\n"
+            return format_string
 
         d = self.data
 
-        x = str(d['status']) + ", clouds: " + str(d['cloud']) + "%"
-        # r1c1 = ((" " * 20) - len(x))
-        r1c1 = str(d['status']) + ", clouds: " + str(d['cloud']) + " %"
-        r2c1 = "wind speed: " + str(d['wind_speed']) + " deg: " + str(d['wind_deg'])
+        if d['cloud']:
+            r1c1 = str(d['status']) + ", clouds: " + str(d['cloud']) + "%"
+        else:
+            r1c1 = str(d['status'])
+        r2c1 = "wind speed: " + str(d['wind_speed']) + ", deg: " + str(d['wind_deg'])
         r3c1 = "Empty"
+        # Daylight: 06:00 -> 16:00
         r4c1 = "This is a very long sentence."
 
         txt = [
@@ -104,22 +87,13 @@ class Get_Data:
             [r4c1, "Outside: " + str(d['outside']) + "°C"]
         ]
 
-        c1 = str(38)
-        c2 = str(16)
-
-        format_line = "{: <" + str(c1) + "}{: >" + str(c2) + "}"
-
-        # 37 + 15 ?
         self.msg = ""
         for row in txt:
-            #    |37     | 8 | 6|
             format_line = formatter(row)
-            #print(format_line)
             self.msg = self.msg + format_line.format(*row)
 
         self.writefile("weather")
         print("Created weather.txt")
-
         return True
 
     def writefile(self, filename):
@@ -235,12 +209,6 @@ class Get_Data:
 
 def start():
     print("Feeder program starts")
-
-    # TODO this loop is broken
-    # just check when last run was made
-    # if old, fetch new data
-    # now it loops whole code every 5th seconds
-
     old_data = pre_data()
     while loop_code:
         # pre_data changes the old statement after 15 min
@@ -263,7 +231,6 @@ def start():
     # TODO
     #
     # add energy prices (?)
-    # Parse and render two files (weather.txt, economy.txt)
 
 
 def pre_data():
