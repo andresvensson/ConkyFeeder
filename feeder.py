@@ -138,8 +138,9 @@ class Get_Data:
         self.column = s.column1()
         tn = "weather_"
         self.table = tn + s.table1()
-        d['datarum'] = self.fetcher()[0][0]
-        d['datarum_h'] = self.fetcher()[0][1]
+        data = self.fetcher()[0]
+        d['datarum'] = data[0]
+        d['datarum_h'] = data[1]
         self.table = tn + s.table2()
         d['sovrum'] = self.fetcher()[0][0]
         self.table = tn + s.table3()
