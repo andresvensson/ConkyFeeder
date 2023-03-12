@@ -128,7 +128,7 @@ class Get_Data:
         return True
 
     def writefile(self, filename):
-        # also make created file (so I can determine if its old data)
+        # also make created.txt file (so I can determine if its old data)
         with open(secret.file_path() + str(filename) + ".txt", "w") as f:
             f.write(str(self.msg))
 
@@ -220,7 +220,7 @@ class Get_Data:
 
     def currency_enabled(self):
         # only get values between certain time (db updates 08:05 and 17:05)
-        # except if no data or old data in files
+        # except if no data or old (5h) data in files
         timenow = dt.datetime.now().time()
         if dt.time(7, 45) < timenow < dt.time(8, 30):
             return True
@@ -265,6 +265,7 @@ def start():
     # TODO
     #
     # add energy prices (?)
+    # add car stats (?)
 
 
 def pre_data():
