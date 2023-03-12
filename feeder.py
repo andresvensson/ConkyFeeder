@@ -38,7 +38,6 @@ class Get_Data:
     def parse_data(self):
         e = self.parse_economy()
         w = self.parse_weather()
-        #w = True
 
         if e and w:
             self.msg = self.data['ts']
@@ -48,11 +47,14 @@ class Get_Data:
 
     def parse_economy(self):
         try:
-            # TODO add weekday and week number, remove age min old
             l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
             l2 = "1 BTC = " + str(self.data['btc'] + " USD")
-            l3 = "TS in DB: " + str(self.data['ts'])
-            self.msg = l1 + "\n" + l2 + "\n" + l3
+            l3 = "TS from DB: " + str(self.data['ts'])
+            ts = dt.datetime.now()
+            days = ["Monday", "Tuesday", "Wednesday",
+                    "Thursday", "Friday", "Saturday", "Sunday"]
+            l4 = str(days[ts.weekday()]) + ", week " + str(ts.isocalendar().week)
+            self.msg = l1 + "\n" + l2 + "\n" + l3 + "\n" + l4
             self.writefile("economy")
             print("Created economy.txt")
             return True
@@ -71,14 +73,33 @@ class Get_Data:
 
         d = self.data
 
+        # column 1, line 1
         if d['cloud']:
             r1c1 = str(d['status']) + ", clouds: " + str(d['cloud']) + "%"
         else:
             r1c1 = str(d['status'])
+
+        # column 1, line 2
         r2c1 = "wind speed: " + str(d['wind_speed']) + ", deg: " + str(d['wind_deg'])
-        r3c1 = "Empty"
-        # Daylight: 06:00 -> 16:00
-        r4c1 = "This is a very long sentence."
+
+        # column 1, line 3
+        r3c1 = None
+        if 'rain_1' in d:
+            if 'rain_3' in d:
+                r3c1 = "Rain 1h: " + str(d['rain_1h']) + " Rain 3h: " + str(d['rain_3h'])
+            else:
+                r3c1 = "Rain 1h: " + str(d['rain_1h'])
+        elif 'snow_1' in d:
+            if 'snow_3' in d:
+                r3c1 = "Snow 1h: " + str(d['snow_1h']) + " Snow 3h: " + str(d['snow_3h'])
+            else:
+                r3c1 = "Snow 1h: " + str(d['snow_1h'])
+        elif not r3c1:
+            r3c1 = "no precipitation"
+
+        # column 1, line 4
+        r4c1 = "Daylight: " + str(d['sunrise'] + dt.timedelta(hours=1))[:-3] + " -> " \
+               + str(d['sunset'] + dt.timedelta(hours=1))[:-3]
 
         txt = [
             [r1c1, "Kitchen: " + str(d['kitchen']) + "°C"],
@@ -119,11 +140,11 @@ class Get_Data:
         self.column = "*"
         all_w = self.fetcher()[0]
 
-        d['tot_entires'] = all_w[0]
+        d['tot_entries'] = all_w[0]
         d['ts'] = all_w[1]
         d['outside'] = all_w[3]
         d['humidity'] = all_w[4]
-        d['snow_1'] = all_w[5]
+        d['snow_1h'] = all_w[5]
         d['snow_3h'] = all_w[6]
         d['rain_1h'] = all_w[7]
         d['rain_3h'] = all_w[8]
