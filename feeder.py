@@ -49,7 +49,9 @@ class Get_Data:
         try:
             l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
             l2 = "1 BTC = " + str(self.data['btc'] + " USD")
-            l3 = "TS from DB: " + str(self.data['ts'])
+            tot = str(self.data['tot_entries'])
+            tot = tot[0:2] + ' ' + tot[2:]
+            l3 = "TS from DB: " + str(self.data['ts']) + ", total: " + str(tot)
             ts = dt.datetime.now()
             days = ["Monday", "Tuesday", "Wednesday",
                     "Thursday", "Friday", "Saturday", "Sunday"]
@@ -80,7 +82,11 @@ class Get_Data:
             r1c1 = str(d['status'])
 
         # column 1, line 2
-        r2c1 = "wind speed: " + str(d['wind_speed']) + ", deg: " + str(d['wind_deg'])
+        if d['gust']:
+            x = ", gust: " + d['gust']
+        else:
+            x = ""
+        r2c1 = "wind: speed: " + str(d['wind_speed']) + ", deg: " + str(d['wind_deg']) + str(x)
 
         # column 1, line 3
         r3c1 = None
@@ -97,15 +103,19 @@ class Get_Data:
         elif not r3c1:
             r3c1 = "no precipitation"
 
+        # column 1, line 5
+        r4c1 = "Humidity, out: " + str(d['humidity']) + "%, datarum: " + str(round(d['datarum_h'])) + "%"
+
         # column 1, line 4
-        r4c1 = "Daylight: " + str(d['sunrise'] + dt.timedelta(hours=1))[:-3] + " -> " \
+        r5c1 = "Daylight: " + str(d['sunrise'] + dt.timedelta(hours=1))[:-3] + " -> " \
                + str(d['sunset'] + dt.timedelta(hours=1))[:-3]
 
         txt = [
             [r1c1, "Kitchen: " + str(d['kitchen']) + "°C"],
             [r2c1, "Datarum: " + str(d['datarum']) + "°C"],
             [r3c1, "Lowes: " + str(d['sovrum']) + "°C"],
-            [r4c1, "Outside: " + str(d['outside']) + "°C"]
+            [r4c1, "Outside: " + str(d['outside']) + "°C"],
+            [r5c1, ""]
         ]
 
         self.msg = ""
@@ -129,6 +139,7 @@ class Get_Data:
         tn = "weather_"
         self.table = tn + s.table1()
         d['datarum'] = self.fetcher()[0][0]
+        d['datarum_h'] = self.fetcher()[0][1]
         self.table = tn + s.table2()
         d['sovrum'] = self.fetcher()[0][0]
         self.table = tn + s.table3()
@@ -166,7 +177,9 @@ class Get_Data:
 
         self.db_name = s.db_name2()
         self.table = s.table6()
-        d['btc'] = self.fetcher()[0][0]
+        btc = self.fetcher()[0][0]
+        # insert space in thousands (21 000)
+        d['btc'] = btc[0:2] + ' ' + btc[2:]
 
         return d
 
@@ -179,7 +192,6 @@ class Get_Data:
         try:
             c.execute(self.sql_query())
             sql_data = c.fetchall()
-            # print("Raw data:", sql_data)
             c.close()
 
         except pymysql.Error as e:
