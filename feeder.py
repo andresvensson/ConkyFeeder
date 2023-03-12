@@ -13,7 +13,7 @@ import secret as s
 
 # Config
 print_all_values = False
-loop_code = True
+loop_code = False
 
 
 class Get_Data:
@@ -139,6 +139,7 @@ class Get_Data:
         tn = "weather_"
         self.table = tn + s.table1()
         data = self.fetcher()[0]
+        print("HEY!??", data)
         d['datarum'] = data[0]
         d['datarum_h'] = data[1]
         self.table = tn + s.table2()
