@@ -11,9 +11,10 @@ import secret as s
 # write a text file for Conky to cat
 
 
+# TODO REMEMBER TOGGLE BEFORE GIT
 # Config
 print_all_values = False
-loop_code = True
+loop_code = False
 
 
 class Get_Data:
@@ -101,7 +102,8 @@ class Get_Data:
             else:
                 r3c1 = "Snow 1h: " + str(d['snow_1h'])
         elif not r3c1:
-            r3c1 = "no precipitation"
+            #r3c1 = "no precipitation"
+            r3c1 = ""
 
         # column 1, line 5
         r4c1 = "Humidity, out: " + str(d['humidity']) + "%, datarum: " + str(round(d['datarum_h'])) + "%"
