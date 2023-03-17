@@ -14,7 +14,7 @@ import secret as s
 # TODO REMEMBER TOGGLE BEFORE GIT
 # Config
 print_all_values = False
-loop_code = False
+loop_code = True
 
 
 class Get_Data:
