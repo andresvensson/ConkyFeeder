@@ -102,7 +102,6 @@ class Get_Data:
             else:
                 r3c1 = "Snow 1h: " + str(d['snow_1h'])
         elif not r3c1:
-            #r3c1 = "no precipitation"
             r3c1 = ""
 
         # column 1, line 5
@@ -175,8 +174,12 @@ class Get_Data:
             self.table = s.table5()
             # euro to sek/usd
             all_cur = self.fetcher()
-            d['usd'] = all_cur[0][1]
-            d['sek'] = all_cur[1][1]
+            if all_cur[0][1] > all_cur[1][1]:
+                d['usd'] = all_cur[1][1]
+                d['sek'] = all_cur[0][1]
+            else:
+                d['usd'] = all_cur[0][1]
+                d['sek'] = all_cur[1][1]
 
         self.db_name = s.db_name2()
         self.table = s.table6()
@@ -278,12 +281,10 @@ def pre_data():
             ts = dt.datetime.strptime(file.read(), '%Y-%m-%d %H:%M:%S')
             og['ts'] = ts
             dur = dt.datetime.now() - ts
-            age_sek = dur.total_seconds()
-            age_min = round(age_sek / 60)
-            og['age'] = age_sek
-            og['age_min'] = age_min
+            og['age'] = dur.total_seconds()
+            og['age_min'] = round(og['age'] / 60)
             # check if data is older than 15 min and 3 sec, return True/False statement
-            if age_sek > (15 * 60 + 3):
+            if og['age'] > (15 * 60 + 3):
                 og['old'] = True
             else:
                 og['old'] = False
