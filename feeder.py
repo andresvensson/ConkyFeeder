@@ -226,10 +226,10 @@ class Get_Data:
     def currency_enabled(self):
         # only get values between certain time (db updates 08:05 and 17:05)
         # except if no data or old (5h) data in files
-        timenow = dt.datetime.now().time()
-        if dt.time(7, 45) < timenow < dt.time(8, 30):
+        time_now = dt.datetime.now().time()
+        if dt.time(7, 45) < time_now < dt.time(8, 30):
             return True
-        elif dt.time(16, 45) < timenow < dt.time(17, 30):
+        elif dt.time(16, 45) < time_now < dt.time(17, 30):
             return True
         elif 'age_min' in self.old_data:
             # check age threshold
