@@ -4,8 +4,10 @@ import time
 import pymysql
 import os.path
 import datetime as dt
+from nordpool import elspot
+# tmp
+import pickle
 
-import secret
 import secret as s
 
 # write a text file for Conky to cat
@@ -13,8 +15,8 @@ import secret as s
 
 # TODO REMEMBER TOGGLE BEFORE GIT
 # Config
-print_all_values = False
-loop_code = True
+print_all_values = True
+loop_code = False
 
 
 class Get_Data:
@@ -130,7 +132,7 @@ class Get_Data:
 
     def writefile(self, filename):
         # also make created.txt file (so I can determine if its old data)
-        with open(secret.file_path() + str(filename) + ".txt", "w") as f:
+        with open(s.file_path() + str(filename) + ".txt", "w") as f:
             f.write(str(self.msg))
 
     def collect_data(self):
@@ -187,6 +189,8 @@ class Get_Data:
         # insert space in thousands (21 000)
         d['btc'] = btc[0:2] + ' ' + btc[2:]
 
+        d['energy'] = self.energy()
+
         return d
 
     def fetcher(self):
@@ -240,6 +244,51 @@ class Get_Data:
         else:
             return False
 
+    def energy(self) -> dict:
+        nrj = {}
+        online = False
+        save = False
+        try:
+            print("\nEnergy print:")
+            areas = None
+
+            if online:
+                spot_price = elspot.Prices(currency='SEK')
+                price = spot_price.hourly(areas=['SE3'])
+                areas = price['areas']['SE3']
+            else:
+                with open('api_data.pkl', 'rb') as f:
+                #with open('2023-03-22.pkl', 'rb') as f:
+                    areas = pickle.load(f)
+            if save:
+                #with open("api_data.pkl", "wb") as f:
+                with open("2023-03-22.pkl", "wb") as f:
+                    pickle.dump(areas, f)
+
+            nrj['online'] = True
+            nrj['min'] = areas['Min']
+            nrj['max'] = areas['Max']
+            nrj['average'] = areas['Average']
+            # this shows 1 hour behind (naive?)
+            now = dt.datetime.now().timestamp()
+
+            for x in areas['values']:
+                print(x['start'], "->", x['end'])
+                if x['start'].timestamp() < now < x['end'].timestamp():
+                    nrj['current'] = x['value']
+                    # datetime now shows the correct time (aware?)
+                    print("hej!", dt.datetime.now())
+                #else:
+                #    print("nope")
+
+            print("...end\n")
+
+        except Exception as e:
+            nrj['online'] = False
+            nrj['error'] = e
+
+        return nrj
+
     def print_data(self):
         print("data:\nKey : Value : Datatype")
         for x in self.data:
@@ -275,7 +324,7 @@ def start():
 
 def pre_data():
     og = {'old': bool, 'ts': datetime.datetime, 'age': int}
-    log_file = secret.file_path() + "created.txt"
+    log_file = s.file_path() + "created.txt"
     if os.path.isfile(log_file):
         with open(log_file, "r") as file:
             ts = dt.datetime.strptime(file.read(), '%Y-%m-%d %H:%M:%S')
