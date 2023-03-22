@@ -91,13 +91,13 @@ class Get_Data:
 
         # column 1, line 3
         r3c1 = None
-        if 'rain_1h' in d:
-            if 'rain_3h' in d:
+        if d['rain_1h']:
+            if d['rain_3h']:
                 r3c1 = "Rain 1h: " + str(d['rain_1h']) + " Rain 3h: " + str(d['rain_3h'])
             else:
                 r3c1 = "Rain 1h: " + str(d['rain_1h'])
-        elif 'snow_1h' in d:
-            if 'snow_3h' in d:
+        elif d['snow_1h']:
+            if d['snow_3h']:
                 r3c1 = "Snow 1h: " + str(d['snow_1h']) + " Snow 3h: " + str(d['snow_3h'])
             else:
                 r3c1 = "Snow 1h: " + str(d['snow_1h'])
@@ -157,10 +157,10 @@ class Get_Data:
         d['ts'] = all_w[1]
         d['outside'] = all_w[3]
         d['humidity'] = all_w[4]
-        d['snow_1h'] = all_w[5]
-        d['snow_3h'] = all_w[6]
-        d['rain_1h'] = all_w[7]
-        d['rain_3h'] = all_w[8]
+        d['rain_1h'] = all_w[5]
+        d['rain_3h'] = all_w[6]
+        d['snow_1h'] = all_w[7]
+        d['snow_3h'] = all_w[8]
         d['wind_speed'] = all_w[9]
         d['wind_deg'] = all_w[10]
         d['gust'] = all_w[11]
