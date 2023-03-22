@@ -91,13 +91,13 @@ class Get_Data:
 
         # column 1, line 3
         r3c1 = None
-        if 'rain_1' in d:
-            if 'rain_3' in d:
+        if 'rain_1h' in d:
+            if 'rain_3h' in d:
                 r3c1 = "Rain 1h: " + str(d['rain_1h']) + " Rain 3h: " + str(d['rain_3h'])
             else:
                 r3c1 = "Rain 1h: " + str(d['rain_1h'])
-        elif 'snow_1' in d:
-            if 'snow_3' in d:
+        elif 'snow_1h' in d:
+            if 'snow_3h' in d:
                 r3c1 = "Snow 1h: " + str(d['snow_1h']) + " Snow 3h: " + str(d['snow_3h'])
             else:
                 r3c1 = "Snow 1h: " + str(d['snow_1h'])
