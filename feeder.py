@@ -54,7 +54,8 @@ class Get_Data:
             l4 = str(days[ts.weekday()]) + ", week " + str(ts.isocalendar().week)
             self.msg = l1 + "\n" + l2 + "\n" + l3 + "\n" + l4
             self.writefile("economy")
-            print("Created economy.txt")
+            if print_all_values:
+                print("Created economy.txt")
             return True
 
         except Exception as e:
@@ -120,7 +121,8 @@ class Get_Data:
             self.msg = self.msg + format_line.format(*row)
 
         self.writefile("weather")
-        print("Created weather.txt")
+        if print_all_values:
+            print("Created weather.txt")
         return True
 
     def writefile(self, filename):
