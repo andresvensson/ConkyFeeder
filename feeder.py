@@ -5,16 +5,11 @@ import pymysql
 import os.path
 import datetime as dt
 
-import secret
 import secret as s
-
 # write a text file for Conky to cat
 
-
-# TODO REMEMBER TOGGLE BEFORE GIT
 # Config
-print_all_values = False
-loop_code = True
+print_all_values, loop_code = s.settings()
 
 
 class Get_Data:
@@ -130,7 +125,7 @@ class Get_Data:
 
     def writefile(self, filename):
         # also make created.txt file (so I can determine if its old data)
-        with open(secret.file_path() + str(filename) + ".txt", "w") as f:
+        with open(s.file_path() + str(filename) + ".txt", "w") as f:
             f.write(str(self.msg))
 
     def collect_data(self):
@@ -261,7 +256,12 @@ def start():
         # no negative integers for sleep command pls
         if sleep <= 0:
             sleep = 0
-        print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
+
+        # print user feedback to console
+        if (sleep / 60) < 1:
+            print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep), "sec")
+        else:
+            print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
         time.sleep(sleep)
     else:
         Get_Data(old_data)
@@ -275,7 +275,7 @@ def start():
 
 def pre_data():
     og = {'old': bool, 'ts': datetime.datetime, 'age': int}
-    log_file = secret.file_path() + "created.txt"
+    log_file = s.file_path() + "created.txt"
     if os.path.isfile(log_file):
         with open(log_file, "r") as file:
             ts = dt.datetime.strptime(file.read(), '%Y-%m-%d %H:%M:%S')
