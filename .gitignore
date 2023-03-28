@@ -1,6 +1,7 @@
 old_feeder.py
 secret.py
 notes.txt
+feeder.service
 *.pkl
 venv/
 conky_assets/*
