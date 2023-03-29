@@ -260,7 +260,7 @@ def start():
             sleep = 0
 
         # print user feedback to console
-        if (sleep / 60) < 1:
+        if sleep < 60:
             print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep), "sec")
         else:
             print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
