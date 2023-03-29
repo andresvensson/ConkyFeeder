@@ -258,6 +258,8 @@ def start():
         # no negative integers for sleep command pls
         if sleep <= 0:
             sleep = 0
+        else:
+            pass
 
         # print user feedback to console
         if sleep < 60:
