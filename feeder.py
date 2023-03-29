@@ -245,15 +245,15 @@ class Get_Data:
 
 def start():
     print("Feeder program starts")
-    old_data = pre_data()
     while loop_code:
-        # pre_data changes the old statement after 15 min
+        old_data = pre_data()
+        # pre_data changes the 'old' statement after 15 min
         if old_data['old']:
             print("Data is old (" + str(old_data['age_min']) + " min), Get new data")
             Get_Data(old_data)
         else:
             pass
-        old_data = pre_data()
+
         sleep = (15 * 60) - (old_data['age'] - 4)
         # no negative integers for sleep command pls
         if sleep <= 0:
@@ -268,6 +268,7 @@ def start():
             print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
         time.sleep(sleep)
     else:
+        old_data = pre_data()
         Get_Data(old_data)
         pass
 
