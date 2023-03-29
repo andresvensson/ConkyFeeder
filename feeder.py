@@ -249,7 +249,7 @@ def start():
     while loop_code:
         # pre_data changes the old statement after 15 min
         if old_data['old']:
-            print("Get new data")
+            print("Data is old (" + str(old_data['age_min']) + " min), Get new data")
             Get_Data(old_data)
         else:
             pass
