@@ -10,7 +10,7 @@ import secret as s
 
 # Config
 print_all_values, loop_code = s.settings()
-
+create_file_log = True
 
 class Get_Data:
     """Get values from my database.
@@ -249,19 +249,21 @@ def start():
         old_data = pre_data()
         sleep = (15 * 60) - (old_data['age'] - 4)
         # no negative integers for sleep command pls
-        if sleep <= 0:
-            sleep = 0
+        if sleep <= 3:
+            sleep = 3
         # pre_data changes the 'old' statement after 15 min
+        # print user feedback to console
         if old_data['old']:
             print("Data is old (" + str(old_data['age_min']) + " min), Get new data")
-            Get_Data(old_data)
+            try:
+                Get_Data(old_data)
+            except Exception as e:
+                print("could not launch, error:", e)
         else:
             if sleep < 60:
                 print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep), "sec")
             else:
                 print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
-
-        # print user feedback to console
 
         time.sleep(sleep)
     else:
