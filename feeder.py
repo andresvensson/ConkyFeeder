@@ -1,5 +1,6 @@
 import datetime
 import time
+import logging
 
 import pymysql
 import os.path
@@ -10,6 +11,8 @@ import secret as s
 
 # Config
 print_all_values, loop_code = s.settings()
+logging.basicConfig(level=logging.INFO, filename="log.log", filemode="w",
+                    format="%(asctime)s - %(levelname)s - %(message)s")
 create_file_log = True
 
 class Get_Data:
@@ -245,30 +248,36 @@ class Get_Data:
 
 def start():
     print("Feeder program starts")
-    while loop_code:
-        old_data = pre_data()
-        sleep = (15 * 60) - (old_data['age'] - 4)
-        # no negative integers for sleep command pls
-        if sleep <= 3:
-            sleep = 3
-        # pre_data changes the 'old' statement after 15 min
-        # print user feedback to console
-        if old_data['old']:
-            print("Data is old (" + str(old_data['age_min']) + " min), Get new data")
-            try:
-                Get_Data(old_data)
-            except Exception as e:
-                print("could not launch, error:", e)
-        else:
-            if sleep < 60:
-                print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep), "sec")
+    try:
+        while loop_code:
+            old_data = pre_data()
+            sleep = (15 * 60) - (old_data['age'] - 4)
+            # no negative integers for sleep command pls
+            if sleep <= 3:
+                sleep = 3
+            # pre_data changes the 'old' statement after 15 min
+            # print user feedback to console
+            if old_data['old']:
+                print("Data is old (" + str(old_data['age_min']) + " min), Get new data")
+                try:
+                    Get_Data(old_data)
+                except Exception as e:
+                    print("could not launch, error:", e)
+                    logging.exception(e)
+                    continue
             else:
-                print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
+                if sleep < 60:
+                    print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep), "sec")
+                else:
+                    print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
 
-        time.sleep(sleep)
-    else:
-        old_data = pre_data()
-        Get_Data(old_data)
+            time.sleep(sleep)
+        else:
+            old_data = pre_data()
+            Get_Data(old_data)
+            pass
+    except Exception as e:
+        logging.exception(e)
         pass
 
     # TODO
@@ -300,4 +309,5 @@ def pre_data():
 
 
 if __name__ == "__main__":
+    logging.info("Program started")
     start()

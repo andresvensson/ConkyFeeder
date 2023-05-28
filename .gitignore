@@ -1,6 +1,7 @@
 old_feeder.py
 secret.py
 notes.txt
+log.log
 feeder.service
 *.pkl
 venv/
