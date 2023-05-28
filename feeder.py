@@ -263,6 +263,8 @@ def start():
                     Get_Data(old_data)
                 except Exception as e:
                     print("could not launch, error:", e)
+                    logging.exception(e)
+                    continue
             else:
                 if sleep < 60:
                     print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep), "sec")
