@@ -49,11 +49,13 @@ class Get_Data:
     def parse_economy(self):
         try:
             l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
+            # btc sum; remove decimal
+            btc_sum = int(self.data['btc'][2])
+            btc_sum = str(btc_sum)
+            # insert space in thousands (21 000)
+            btc_sum = btc_sum[0:2] + ' ' + btc_sum[2:]
+            l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + ")"
 
-            print("!!! btc output:", self.data['btc'])
-            #sys.exit()
-
-            l2 = "1 BTC = " + str(self.data['btc']) + " USD"
             tot = str(self.data['tot_entries'])
             tot = tot[0:2] + ' ' + tot[2:]
             l3 = "TS from DB: " + str(self.data['ts']) + ", total: " + str(tot)
@@ -189,15 +191,8 @@ class Get_Data:
 
         self.db_name = s.db_name2()
         self.table = s.table6()
-        # TODO
-        #btc = self.fetcher()[0][0]
-        btc = self.fetcher()[0][2]
+        btc = self.fetcher()[0]
         d['btc'] = btc
-
-        # insert space in thousands (21 000)
-        # !! float object is not subscriptable !!
-        #d['btc'] = btc[0:2] + ' ' + btc[2:]
-
         return d
 
     def fetcher(self):
