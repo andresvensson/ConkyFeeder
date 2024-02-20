@@ -1,4 +1,5 @@
 import datetime
+import sys
 import time
 import logging
 
@@ -14,6 +15,7 @@ print_all_values, loop_code = s.settings()
 logging.basicConfig(level=logging.INFO, filename="log.log", filemode="w",
                     format="%(asctime)s - %(levelname)s - %(message)s")
 create_file_log = True
+
 
 class Get_Data:
     """Get values from my database.
@@ -47,7 +49,11 @@ class Get_Data:
     def parse_economy(self):
         try:
             l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
-            l2 = "1 BTC = " + str(self.data['btc'] + " USD")
+
+            print("!!! btc output:", self.data['btc'])
+            #sys.exit()
+
+            l2 = "1 BTC = " + str(self.data['btc']) + " USD"
             tot = str(self.data['tot_entries'])
             tot = tot[0:2] + ' ' + tot[2:]
             l3 = "TS from DB: " + str(self.data['ts']) + ", total: " + str(tot)
@@ -183,9 +189,14 @@ class Get_Data:
 
         self.db_name = s.db_name2()
         self.table = s.table6()
-        btc = self.fetcher()[0][0]
+        # TODO
+        #btc = self.fetcher()[0][0]
+        btc = self.fetcher()[0][2]
+        d['btc'] = btc
+
         # insert space in thousands (21 000)
-        d['btc'] = btc[0:2] + ' ' + btc[2:]
+        # !! float object is not subscriptable !!
+        #d['btc'] = btc[0:2] + ' ' + btc[2:]
 
         return d
 
@@ -218,7 +229,7 @@ class Get_Data:
                    "OR Currency='USD' ORDER BY time DESC LIMIT 2"
 
         if self.table == s.table6():
-            return "SELECT {} FROM {} ORDER BY Time DESC LIMIT 1".format(self.column, self.table)
+            return "SELECT {} FROM {} ORDER BY id DESC LIMIT 1".format(self.column, self.table)
 
         else:
             return "SELECT {} FROM {} ORDER BY value_id DESC LIMIT 1".format(self.column, self.table)
