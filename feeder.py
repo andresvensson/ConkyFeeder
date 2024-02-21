@@ -54,7 +54,7 @@ class Get_Data:
             btc_sum = str(btc_sum)
             # insert space in thousands (21 000)
             btc_sum = btc_sum[0:2] + ' ' + btc_sum[2:]
-            l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + ")"
+            l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + " %)"
 
             tot = str(self.data['tot_entries'])
             tot = tot[0:2] + ' ' + tot[2:]
