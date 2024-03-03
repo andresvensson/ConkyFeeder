@@ -6,6 +6,7 @@ import logging
 import pymysql
 import os.path
 import datetime as dt
+from datetime import timedelta
 
 import secret as s
 # write a text file for Conky to cat
@@ -48,7 +49,9 @@ class Get_Data:
 
     def parse_economy(self):
         try:
+            ts = dt.datetime.now()
             l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
+
             # btc sum; remove decimal
             btc_sum = int(self.data['btc'][2])
             btc_sum = str(btc_sum)
@@ -56,14 +59,17 @@ class Get_Data:
             btc_sum = btc_sum[0:2] + ' ' + btc_sum[2:]
             l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + " %)"
 
+            l3 = self.parse_nordpool()
+
             tot = str(self.data['tot_entries'])
             tot = tot[0:2] + ' ' + tot[2:]
-            l3 = "TS from DB: " + str(self.data['ts']) + ", total: " + str(tot)
-            ts = dt.datetime.now()
+            l4 = "TS from DB: " + str(self.data['ts']) + ", total: " + str(tot)
+
             days = ["Monday", "Tuesday", "Wednesday",
                     "Thursday", "Friday", "Saturday", "Sunday"]
-            l4 = str(days[ts.weekday()]) + ", week " + str(ts.isocalendar().week)
-            self.msg = l1 + "\n" + l2 + "\n" + l3 + "\n" + l4
+            l5 = str(days[ts.weekday()]) + ", week " + str(ts.isocalendar().week)
+
+            self.msg = l1 + "\n" + l2 + "\n" + l3 + "\n" + l4 + "\n" + l5
             self.writefile("economy")
             if print_all_values:
                 print("Created economy.txt")
@@ -191,8 +197,13 @@ class Get_Data:
 
         self.db_name = s.db_name2()
         self.table = s.table6()
-        btc = self.fetcher()[0]
-        d['btc'] = btc
+        #btc = self.fetcher()[0]
+        d['btc'] = self.fetcher()[0]
+        #d['btc'] = btc
+        # get NordPool (price atm, day average)
+        self.table = "NordPool"
+        d['NordPool'] = self.fetcher()
+
         return d
 
     def fetcher(self):
@@ -226,6 +237,9 @@ class Get_Data:
         if self.table == s.table6():
             return "SELECT {} FROM {} ORDER BY id DESC LIMIT 1".format(self.column, self.table)
 
+        if self.table == "NordPool":
+            return "SELECT * FROM NordPool ORDER BY id DESC LIMIT 50"
+
         else:
             return "SELECT {} FROM {} ORDER BY value_id DESC LIMIT 1".format(self.column, self.table)
 
@@ -245,6 +259,49 @@ class Get_Data:
                 return False
         else:
             return False
+
+    def parse_nordpool(self):
+        # calculate mwh -> kwh. Display öre/kwh?
+        # prices listed as kronor / megawatt hour(mwh)
+        # 1 mwh to kwh = 1000 kwh
+
+        # Find correct row for day average stats
+        # could be last row[-1] OR the 25th[24] if db has new data (time > ~13:00)...
+        ts = datetime.datetime.now()
+        ts_date = datetime.datetime.strftime(ts, '%Y-%m-%d')
+        ts_mod = self.data['NordPool'][0][8]
+        ts_db_latest = datetime.datetime.strftime(ts_mod, '%Y-%m-%d')
+
+        print("Latest? half?")
+        print(ts_date, "vs", ts_db_latest)
+        if ts_date == ts_db_latest:
+            print("True")
+            average = self.data['NordPool'][24][2]
+        else:
+            print("False")
+            average = self.data['NordPool'][-1][2]
+
+        # dates (with hourly price) = all rows except row 25 and 50 (daily average stats columns)
+        dates = self.data['NordPool'][:24] + self.data['NordPool'][25:49]
+
+        price = "XXX"
+        count = 0
+        for d in dates:
+            if d[8] < ts < d[9]:
+                print("found value for this hour")
+                price = d[10]
+            print(count, d)
+            count += 1
+
+        # kr/MWh -> öre/kWh
+        # 1 MWh = 1000 kWh, 1 kr = 100 öre
+        price = round(price / 100, 2)
+        average = round(average / 100, 2)
+
+        txt = "NordPool: {0} öre/kWh ({1})".format(price, average)
+        print(txt)
+
+        return txt
 
     def print_data(self):
         print("data:\nKey : Value : Datatype")
