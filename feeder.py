@@ -272,13 +272,9 @@ class Get_Data:
         ts_mod = self.data['NordPool'][0][8]
         ts_db_latest = datetime.datetime.strftime(ts_mod, '%Y-%m-%d')
 
-        print("Latest? half?")
-        print(ts_date, "vs", ts_db_latest)
         if ts_date == ts_db_latest:
-            print("True")
             average = self.data['NordPool'][24][2]
         else:
-            print("False")
             average = self.data['NordPool'][-1][2]
 
         # dates (with hourly price) = all rows except row 25 and 50 (daily average stats columns)
@@ -288,9 +284,7 @@ class Get_Data:
         count = 0
         for d in dates:
             if d[8] < ts < d[9]:
-                print("found value for this hour")
                 price = d[10]
-            print(count, d)
             count += 1
 
         # kr/MWh -> öre/kWh
@@ -299,7 +293,6 @@ class Get_Data:
         average = round(average / 100, 2)
 
         txt = "NordPool: {0} öre/kWh ({1})".format(price, average)
-        print(txt)
 
         return txt
 
