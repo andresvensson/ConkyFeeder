@@ -45,6 +45,7 @@ class Get_Data:
             self.msg = self.data['ts']
             self.writefile("created")
         else:
+            logging.error("Error writing files")
             print("Error writing files")
 
     def parse_economy(self):
@@ -59,7 +60,12 @@ class Get_Data:
             btc_sum = btc_sum[0:2] + ' ' + btc_sum[2:]
             l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + " %)"
 
-            l3 = self.parse_nordpool()
+            try:
+                l3 = self.parse_nordpool()
+            except Exception as e:
+                logging.exception("could not get NordPool stats:")
+                logging.exception(str(e))
+                l3 = "Could not get NordPool stats"
 
             tot = str(self.data['tot_entries'])
             tot = tot[0:2] + ' ' + tot[2:]
