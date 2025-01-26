@@ -57,7 +57,7 @@ class Get_Data:
             btc_sum = int(self.data['btc'][2])
             btc_sum = str(btc_sum)
             # insert space in thousands (21 000)
-            btc_sum = btc_sum[0:2] + ' ' + btc_sum[2:]
+            btc_sum = btc_sum[0:3] + ' ' + btc_sum[3:]
             l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + " %)"
 
             try:
@@ -244,7 +244,7 @@ class Get_Data:
             return "SELECT {} FROM {} ORDER BY id DESC LIMIT 1".format(self.column, self.table)
 
         if self.table == "NordPool":
-            return "SELECT * FROM NordPool ORDER BY id DESC LIMIT 50"
+            return "SELECT * FROM NordPool ORDER BY value_id DESC LIMIT 48"
 
         else:
             return "SELECT {} FROM {} ORDER BY value_id DESC LIMIT 1".format(self.column, self.table)
@@ -272,33 +272,24 @@ class Get_Data:
         # 1 mwh to kwh = 1000 kwh
 
         # Find correct row for day average stats
-        # could be last row[-1] OR the 25th[24] if db has new data (time > ~13:00)...
+
+        d = self.data['NordPool']
+
+        # find recent value
         ts = datetime.datetime.now()
-        ts_date = datetime.datetime.strftime(ts, '%Y-%m-%d')
-        ts_mod = self.data['NordPool'][0][8]
-        ts_db_latest = datetime.datetime.strftime(ts_mod, '%Y-%m-%d')
+        val = None
+        for x in d:
+            if x[2] < ts < x[3]:
+                val = x[4]
 
-        if ts_date == ts_db_latest:
-            average = self.data['NordPool'][24][2]
+        if val:
+            # kr/MWh -> öre/kWh
+            # 1 MWh = 1000 kWh, 1 kr = 100 öre
+            price = round(val / 100, 2)
+            txt = f"NordPool: {price} öre/kWh"
+            print(price)
         else:
-            average = self.data['NordPool'][-1][2]
-
-        # dates (with hourly price) = all rows except row 25 and 50 (daily average stats columns)
-        dates = self.data['NordPool'][:24] + self.data['NordPool'][25:49]
-
-        price = "XXX"
-        count = 0
-        for d in dates:
-            if d[8] < ts < d[9]:
-                price = d[10]
-            count += 1
-
-        # kr/MWh -> öre/kWh
-        # 1 MWh = 1000 kWh, 1 kr = 100 öre
-        price = round(price / 100, 2)
-        average = round(average / 100, 2)
-
-        txt = "NordPool: {0} öre/kWh ({1})".format(price, average)
+            txt = "Has no NordPool stats to show.."
 
         return txt
 
