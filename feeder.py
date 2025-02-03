@@ -276,7 +276,7 @@ class Get_Data:
         d = self.data['NordPool']
 
         # find recent value
-        ts = datetime.datetime.now()
+        ts = datetime.datetime.now() - timedelta(hours=1)
         val = None
         for x in d:
             if x[2] < ts < x[3]:
@@ -284,8 +284,8 @@ class Get_Data:
 
         if val:
             # kr/MWh -> öre/kWh
-            # 1 MWh = 1000 kWh, 1 kr = 100 öre
-            price = round(val / 100, 2)
+            # 1 MWh = 1000 kWh, 1 kr = 1 000 öre
+            price = round(val / 10, 2)
             txt = f"NordPool: {price} öre/kWh"
             print(price)
         else:
