@@ -57,7 +57,8 @@ class Get_Data:
             btc_sum = int(self.data['btc'][2])
             btc_sum = str(btc_sum)
             # insert space in thousands (21 000)
-            btc_sum = btc_sum[0:3] + ' ' + btc_sum[3:]
+            #btc_sum = btc_sum[0:3] + ' ' + btc_sum[3:]
+            btc_sum = btc_sum[:3] + ' ' + btc_sum[3:]
             l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + " %)"
 
             try:
@@ -287,7 +288,6 @@ class Get_Data:
             # 1 MWh = 1000 kWh, 1 kr = 1 000 öre
             price = round(val / 10, 2)
             txt = f"NordPool: {price} öre/kWh"
-            print(price)
         else:
             txt = "Has no NordPool stats to show.."
 
