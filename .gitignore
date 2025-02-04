@@ -3,6 +3,7 @@ secret.py
 notes.txt
 log.log
 feeder.service
+testing.py
 *.pkl
 venv/
 conky_assets/*
