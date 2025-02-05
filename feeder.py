@@ -55,10 +55,10 @@ class Get_Data:
 
             # btc sum; remove decimal
             btc_sum = int(self.data['btc'][2])
-            btc_sum = str(btc_sum)
-            # insert space in thousands (21 000)
-            #btc_sum = btc_sum[0:3] + ' ' + btc_sum[3:]
-            btc_sum = btc_sum[:3] + ' ' + btc_sum[3:]
+            # add spacing for thousands
+            btc_sum = f"{btc_sum:,}"
+            btc_sum = btc_sum.replace(',', ' ')
+
             l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + " %)"
 
             try:
@@ -84,6 +84,7 @@ class Get_Data:
 
         except Exception as e:
             self.msg = "Error:" + str(e)
+            print("ERROR:", e)
             self.writefile("economy")
             return False
 
