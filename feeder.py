@@ -105,7 +105,7 @@ class Get_Data:
 
         # column 1, line 2
         if d['gust']:
-            x = ", gust: " + d['gust']
+            x = ", gust: " + str(d['gust'])
         else:
             x = ""
         r2c1 = "wind: speed: " + str(d['wind_speed']) + ", deg: " + str(d['wind_deg']) + str(x)
