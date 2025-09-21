@@ -4,6 +4,9 @@ notes.txt
 log.log
 feeder.service
 testing.py
+conky_starter.service
+conky_cache_update.sh
+start_conky.sh
 *.pkl
 venv/
 conky_assets/*
