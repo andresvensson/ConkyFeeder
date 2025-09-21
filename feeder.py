@@ -9,13 +9,19 @@ import datetime as dt
 from datetime import timedelta
 
 import secret as s
-# write a text file for Conky to cat
+# write a text file for Conky integration
 
 # Config
 print_all_values, loop_code = s.settings()
 logging.basicConfig(level=logging.INFO, filename="log.log", filemode="w",
                     format="%(asctime)s - %(levelname)s - %(message)s")
 create_file_log = True
+
+
+# TODO
+#  metal prices
+#  add energy prices (?)
+#  add car stats (?)
 
 
 class Get_Data:
@@ -333,11 +339,6 @@ def start():
     except Exception as e:
         logging.exception(e)
         pass
-
-    # TODO
-    #
-    # add energy prices (?)
-    # add car stats (?)
 
 
 def pre_data():
