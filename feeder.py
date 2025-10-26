@@ -1,368 +1,273 @@
-import datetime
+#!/usr/bin/env python3
 import sys
 import time
 import logging
+import datetime as dt
 
 import pymysql
-import os.path
-import datetime as dt
-from datetime import timedelta
+import os
+import secret as s  # your secret/config module
 
-import secret as s
-# write a text file for Conky integration
+# ------------------- Config -------------------
+DEV_MODE = s.dev_mode()
+DATA_FILE = s.file_path() + "conky_data.txt"  # single combined output
+CACHE_FILE = s.file_path() + "created.txt"
 
-# Config
-print_all_values, loop_code = s.settings()
 logging.basicConfig(level=logging.INFO, filename="log.log", filemode="w",
                     format="%(asctime)s - %(levelname)s - %(message)s")
-create_file_log = True
+
+# ------------------- Helpers -------------------
+def get_db_connection(db_name):
+    h, u, p = s.sql()
+    return pymysql.connect(host=h, user=u, passwd=p, db=db_name, charset="utf8mb4",
+                           cursorclass=pymysql.cursors.DictCursor)
 
 
-# TODO
-#  metal prices
-#  add energy prices (?)
-#  add car stats (?)
-
-
-class Get_Data:
-    """Get values from my database.
-    Construct a nice print.
-     Parse into two files.
-    Conky app will run concatenate (cat) the files"""
-
-    def __init__(self, old_data: dict) -> None:
-        self.old_data = old_data
-        self.data = {}
-        self.db_name = None
-        self.table = None
-        self.column = None
-        self.msg = None
-
-        self.data = self.collect_data()
-        if print_all_values:
-            self.print_data()
-        self.parse_data()
-
-    def parse_data(self):
-        e = self.parse_economy()
-        w = self.parse_weather()
-
-        if e and w:
-            self.msg = self.data['ts']
-            self.writefile("created")
-        else:
-            logging.error("Error writing files")
-            print("Error writing files")
-
-    def parse_economy(self):
-        try:
-            ts = dt.datetime.now()
-            l1 = "1 EUR = " + str(self.data['sek']) + " SEK / " + str(self.data['usd']) + " USD"
-
-            # btc sum; remove decimal
-            btc_sum = int(self.data['btc'][2])
-            # add spacing for thousands
-            btc_sum = f"{btc_sum:,}"
-            btc_sum = btc_sum.replace(',', ' ')
-
-            l2 = "1 BTC = " + str(btc_sum) + " USD (" + str(self.data['btc'][16]) + " %)"
-
-            try:
-                l3 = self.parse_nordpool()
-            except Exception as e:
-                logging.exception("could not get NordPool stats:")
-                logging.exception(str(e))
-                l3 = "Could not get NordPool stats"
-
-            tot = str(self.data['tot_entries'])
-            tot = tot[0:2] + ' ' + tot[2:]
-            l4 = "TS from DB: " + str(self.data['ts']) + ", total: " + str(tot)
-
-            days = ["Monday", "Tuesday", "Wednesday",
-                    "Thursday", "Friday", "Saturday", "Sunday"]
-            l5 = str(days[ts.weekday()]) + ", week " + str(ts.isocalendar().week)
-
-            self.msg = l1 + "\n" + l2 + "\n" + l3 + "\n" + l4 + "\n" + l5
-            self.writefile("economy")
-            if print_all_values:
-                print("Created economy.txt")
-            return True
-
-        except Exception as e:
-            self.msg = "Error:" + str(e)
-            print("ERROR:", e)
-            self.writefile("economy")
-            return False
-
-    def parse_weather(self):
-        def formatter(line):
-            c2 = len(line[1])
-            c1 = 54 - c2
-            format_string = "{: <" + str(c1) + "}{: >" + str(c2) + "}\n"
-            return format_string
-
-        d = self.data
-
-        # column 1, line 1
-        if d['cloud']:
-            r1c1 = str(d['status']) + ", clouds: " + str(d['cloud']) + "%"
-        else:
-            r1c1 = str(d['status'])
-
-        # column 1, line 2
-        if d['gust']:
-            x = ", gust: " + str(d['gust'])
-        else:
-            x = ""
-        r2c1 = "wind: speed: " + str(d['wind_speed']) + ", deg: " + str(d['wind_deg']) + str(x)
-
-        # column 1, line 3
-        r3c1 = None
-        if d['rain_1h']:
-            if d['rain_3h']:
-                r3c1 = "Rain 1h: " + str(d['rain_1h']) + " Rain 3h: " + str(d['rain_3h'])
-            else:
-                r3c1 = "Rain 1h: " + str(d['rain_1h'])
-        elif d['snow_1h']:
-            if d['snow_3h']:
-                r3c1 = "Snow 1h: " + str(d['snow_1h']) + " Snow 3h: " + str(d['snow_3h'])
-            else:
-                r3c1 = "Snow 1h: " + str(d['snow_1h'])
-        elif not r3c1:
-            r3c1 = ""
-
-        # column 1, line 5
-        r4c1 = "Humidity, out: " + str(d['humidity']) + "%, datarum: " + str(round(d['datarum_h'])) + "%"
-
-        # column 1, line 4
-        r5c1 = "Daylight: " + str(d['sunrise'] + dt.timedelta(hours=1))[:-3] + " -> " \
-               + str(d['sunset'] + dt.timedelta(hours=1))[:-3]
-
-        txt = [
-            [r1c1, "Kitchen: " + str(d['kitchen']) + "°C"],
-            [r2c1, "Datarum: " + str(d['datarum']) + "°C"],
-            [r3c1, "Lowes: " + str(d['sovrum']) + "°C"],
-            [r4c1, "Outside: " + str(d['outside']) + "°C"],
-            [r5c1, ""]
-        ]
-
-        self.msg = ""
-        for row in txt:
-            format_line = formatter(row)
-            self.msg = self.msg + format_line.format(*row)
-
-        self.writefile("weather")
-        if print_all_values:
-            print("Created weather.txt")
-        return True
-
-    def writefile(self, filename):
-        # also make created.txt file (so I can determine if its old data)
-        with open(s.file_path() + str(filename) + ".txt", "w") as f:
-            f.write(str(self.msg))
-
-    def collect_data(self):
-        d = {}
-        self.db_name = s.db_name1()
-        self.column = s.column1()
-        tn = "weather_"
-        self.table = tn + s.table1()
-        data = self.fetcher()[0]
-        d['datarum'] = data[0]
-        d['datarum_h'] = data[1]
-        self.table = tn + s.table2()
-        d['sovrum'] = self.fetcher()[0][0]
-        self.table = tn + s.table3()
-        d['kitchen'] = self.fetcher()[0][0]
-
-        # return msg
-        self.table = tn + s.table4()
-        d['outside'] = self.fetcher()
-        self.column = "*"
-        all_w = self.fetcher()[0]
-
-        d['tot_entries'] = all_w[0]
-        d['ts'] = all_w[1]
-        d['outside'] = all_w[3]
-        d['humidity'] = all_w[4]
-        d['rain_1h'] = all_w[5]
-        d['rain_3h'] = all_w[6]
-        d['snow_1h'] = all_w[7]
-        d['snow_3h'] = all_w[8]
-        d['wind_speed'] = all_w[9]
-        d['wind_deg'] = all_w[10]
-        d['gust'] = all_w[11]
-        d['cloud'] = all_w[12]
-        d['sunrise'] = all_w[13]
-        d['sunset'] = all_w[14]
-        d['status'] = all_w[15]
-
-        self.currency_enabled()
-        if self.currency_enabled:
-            self.table = s.table5()
-            # euro to sek/usd
-            all_cur = self.fetcher()
-            if all_cur[0][1] > all_cur[1][1]:
-                d['usd'] = all_cur[1][1]
-                d['sek'] = all_cur[0][1]
-            else:
-                d['usd'] = all_cur[0][1]
-                d['sek'] = all_cur[1][1]
-
-        self.db_name = s.db_name2()
-        self.table = s.table6()
-        #btc = self.fetcher()[0]
-        d['btc'] = self.fetcher()[0]
-        #d['btc'] = btc
-        # get NordPool (price atm, day average)
-        self.table = "NordPool"
-        d['NordPool'] = self.fetcher()
-
-        return d
-
-    def fetcher(self):
-        h, u, p = s.sql()
-        db = pymysql.connect(host=h, user=u, passwd=p, db=self.db_name)
-        c = db.cursor()
-        sql_data = None
-
-        try:
-            c.execute(self.sql_query())
-            sql_data = c.fetchall()
-            c.close()
-
-        except pymysql.Error as e:
-            print("Error reading DB: %d: %s" % (e.args[0], e.args[1]))
-            print("nothingness")
-            print("!!", self.db_name)
-
-        if sql_data:
-            return sql_data
-
-        else:
-            print("found no values")
-            pass
-
-    def sql_query(self):
-        if self.table == s.table5():
-            return "SELECT Currency, Rate, time FROM currency_rate WHERE Currency='SEK' " \
-                   "OR Currency='USD' ORDER BY time DESC LIMIT 2"
-
-        if self.table == s.table6():
-            return "SELECT {} FROM {} ORDER BY id DESC LIMIT 1".format(self.column, self.table)
-
-        if self.table == "NordPool":
-            return "SELECT * FROM NordPool ORDER BY value_id DESC LIMIT 48"
-
-        else:
-            return "SELECT {} FROM {} ORDER BY value_id DESC LIMIT 1".format(self.column, self.table)
-
-    def currency_enabled(self):
-        # only get values between certain time (db updates 08:05 and 17:05)
-        # except if no data or old (5h) data in files
-        time_now = dt.datetime.now().time()
-        if dt.time(7, 45) < time_now < dt.time(8, 30):
-            return True
-        elif dt.time(16, 45) < time_now < dt.time(17, 30):
-            return True
-        elif 'age_min' in self.old_data:
-            # check age threshold
-            if self.old_data['age_min'] > 5 * 60:
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def parse_nordpool(self):
-        # calculate mwh -> kwh. Display öre/kwh?
-        # prices listed as kronor / megawatt hour(mwh)
-        # 1 mwh to kwh = 1000 kwh
-
-        # Find correct row for day average stats
-
-        d = self.data['NordPool']
-
-        # find recent value
-        ts = datetime.datetime.now() - timedelta(hours=1)
-        val = None
-        for x in d:
-            if x[2] < ts < x[3]:
-                val = x[4]
-
-        if val:
-            # kr/MWh -> öre/kWh
-            # 1 MWh = 1000 kWh, 1 kr = 1 000 öre
-            price = round(val / 10, 2)
-            txt = f"NordPool: {price} öre/kWh"
-        else:
-            txt = "Has no NordPool stats to show.."
-
-        return txt
-
-    def print_data(self):
-        print("data:\nKey : Value : Datatype")
-        for x in self.data:
-            print(x, ":", self.data[x], ":", type(self.data[x]))
-
-
-def start():
-    print("Feeder program starts")
+def fetch_sql(db_name, table, column="*", extra_condition="", order_by="id"):
+    conn = get_db_connection(db_name)
+    result = None
     try:
-        while loop_code:
-            old_data = pre_data()
-            sleep = (15 * 60) - (old_data['age'] - 4)
-            # no negative integers for sleep command pls
-            if sleep <= 3:
-                sleep = 3
-            # pre_data changes the 'old' statement after 15 min
-            # print user feedback to console
-            if old_data['old']:
-                print("Data is old (" + str(old_data['age_min']) + " min), Get new data")
-                try:
-                    Get_Data(old_data)
-                except Exception as e:
-                    print("could not launch, error:", e)
-                    logging.exception(e)
-                    continue
-            else:
-                if sleep < 60:
-                    print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep), "sec")
-                else:
-                    print("Data age:", old_data['age_min'], "min. Next run in:", round(sleep / 60), "min")
-
-            time.sleep(sleep)
-        else:
-            old_data = pre_data()
-            Get_Data(old_data)
-            pass
-    except Exception as e:
-        logging.exception(e)
-        pass
+        with conn.cursor() as cursor:
+            query = f"SELECT {column} FROM {table} {extra_condition} ORDER BY {order_by} DESC LIMIT 1"
+            if DEV_MODE:
+                print("QUERY:", query)
+            cursor.execute(query)
+            result = cursor.fetchone()
+    except pymysql.Error as e:
+        logging.exception(f"DB error: {e}")
+    finally:
+        conn.close()
+    return result
 
 
-def pre_data():
-    og = {'old': bool, 'ts': datetime.datetime, 'age': int}
-    log_file = s.file_path() + "created.txt"
-    if os.path.isfile(log_file):
-        with open(log_file, "r") as file:
-            ts = dt.datetime.strptime(file.read(), '%Y-%m-%d %H:%M:%S')
-            og['ts'] = ts
-            dur = dt.datetime.now() - ts
-            og['age'] = dur.total_seconds()
-            og['age_min'] = round(og['age'] / 60)
-            # check if data is older than 15 min and 3 sec, return True/False statement
-            if og['age'] > (15 * 60 + 3):
-                og['old'] = True
-            else:
-                og['old'] = False
+def load_cache():
+    if os.path.isfile(CACHE_FILE):
+        with open(CACHE_FILE, "r") as f:
+            ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
+            age = (dt.datetime.now() - ts).total_seconds()
+            return {"ts": ts, "age": age, "old": age > 15 * 60}
+    return {"ts": None, "age": None, "old": True}
+
+
+def save_cache():
+    with open(CACHE_FILE, "w") as f:
+        f.write(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+
+def format_data(data):
+    print("Constructing data textfile..")
+    # 0
+    lines = ["Local Weather"]
+
+    # align l/r within 54 characters
+    def align_lr(left: str, right: str, width: int = 54) -> str:
+        left = left[:max(0, width - len(right) - 1)]  # leave space for right and one space
+        return f"{left:<{width - len(right)}}{right}"
+
+    # 1
+    # scattered clouds, clouds: 40%          Kitchen: 23.4°C
+    #d = data['outside']
+    d = data.get('outside', 0)
+    if d:
+        left = f"{d['status']}, clouds: {d.get('clouds', 0)}%"
+        #right = f"Kitchen: {data['kitchen']['temperature']}°C"
     else:
-        og['old'] = True
-        og['ts'] = None
-        print("No files previous files created at:", log_file)
-    return og
+        left = ""
+    right = f"Kitchen: {data['kitchen'].get('temperature', "XX")}°C"
+    lines.append(align_lr(left, right))
+
+    # 2
+    # wind: speed: 3.09, deg: 70             Datarum: 23.4°C
+    def wind_direction(degrees: float) -> str:
+        """Convert wind direction in degrees to short compass abbreviation (e.g., 'ENE')."""
+        directions = [
+            "N", "NNE", "NE", "ENE",
+            "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW",
+            "W", "WNW", "NW", "NNW",
+        ]
+        # Normalize degrees between 0–360
+        degrees = degrees % 360
+        # Each sector = 22.5 degrees
+        index = int((degrees + 11.25) // 22.5) % 16
+        return directions[index]
+
+    if d:
+        wd = d.get('wind_deg', 0)
+        left = f"wind {d.get('wind_speed', "XX")} m/s, deg: {wd} ({wind_direction(wd)})"
+    else:
+        left = ""
+    right = f"Datarum: {data['datarum'].get('temperature', "XX")}°C"
+    lines.append(align_lr(left, right))
+
+
+    # 3
+    # precipitation?                           Lowes: 24.2°C
+    if d['rain_1h']:
+        left = f"rain 1h: {d['rain_1h']}mm"
+        if d['rain_3h']:
+            left += f", 3h: {d['rain_3h']}mm"
+    elif d['snow_1h']:
+        left = f"snow 1h: {d['snow_1h']}mm"
+        if d['snow_3h']:
+            left += f", 3h: {d['rain_3h']}mm"
+    else:
+        left = ""
+    right = f"Lowes: {data['sovrum'].get('temperature', "XX")}°C"
+    lines.append(align_lr(left, right))
+
+    # 5
+    # Humidity, out: 82%, datarum: 54%      Outside: 16.12°C
+    left = f"Humidity: Out {d['humidity']}%, datarum {data['datarum']['humidity']}%"
+    right = f"Outside: {d['temperature']}°C"
+    lines.append(align_lr(left, right))
+
+    # 6
+    # Daylight: 5:25 -> 17:55
+    lines.append(
+        f"Daylight: {str(d['sunrise'] + dt.timedelta(hours=1))[:-3]} -> {str(d['sunset'] + dt.timedelta(hours=1))[:-3]}")
+
+    # 7
+    lines.append(" ")
+
+    # 8
+    lines.append("Economy")
+
+    # 9
+    # 1 EUR = 11.324 SEK / 1.1124 USD
+    lines.append(f"1 EUR = {data['sek']['Rate']} SEK / {data['usd']['Rate']} USD")
+
+    # 10
+    # 1 BTC = 61 938 USD (2.9 %)
+    lines.append(f"1 BTC = {data['btc']['Price']} USD ({data['btc']['percent_change_24']} %)")
+
+    # 11
+    # Gold: 4113 USD/once, Silver: 48 USD/ounce
+    lines.append(f"Gold: {int(data['gold']['rate'])} USD/once, Silver: {int(data['silver']['rate'])} USD/ounce")
+
+    # 12
+    # NordPool: 19.42 öre/kWh
+    if data['NordPool']:
+        # kr/MWh -> öre/kWh
+        # 1 MWh = 1000 kWh, 1 kr = 1 000 öre
+        lines.append(f"NordPool: {round(data['NordPool']['value'] / 10, 2)} öre/kWh")
+    else:
+        lines.append("Has no NordPool stats to show..")
+
+    # 13
+    # TS from DB: 2024-09-19 11:00:05, total: 83 191
+    tot = f"{data['outside']['value_id']:,}".replace(",", " ")
+    lines.append(f"TS from DB: {data['outside']['time_stamp']}, total {tot}")
+
+    # 14
+    # Thursday, week 38
+    ts = dt.datetime.now()
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    lines.append(f"{days[ts.weekday()]}, week {ts.isocalendar()[1]}")
+
+    return "\n".join(lines)
+
+
+def write_output(msg):
+    with open(DATA_FILE, "w") as f:
+        f.write(msg)
+    save_cache()
+
+
+# ------------------- Main -------------------
+def collect_data():
+    d = {}
+
+    # Weather
+    db_name = "website"
+    table = "weather_datarum"
+    column = "temperature, humidity"
+    extra_condition = ""
+    order_by = "value_id"
+    d["datarum"] = fetch_sql(db_name, table, column, "", order_by)
+
+    table = "weather_sovrum"
+    column = "temperature"
+    d["sovrum"] = fetch_sql(db_name, table, column, order_by = "value_id")
+
+    table = "weather_kitchen"
+    d["kitchen"] = fetch_sql(db_name, table, column, order_by = "value_id")
+
+    table = "weather_outside"
+    d['outside'] = fetch_sql(db_name, table, order_by="value_id")
+
+    # Currency
+    table = s.table5()
+    d['usd'] = fetch_sql(s.db_name1(), table, extra_condition="WHERE Currency='USD'", order_by="value_id")
+    d['sek'] = fetch_sql(s.db_name1(), table, extra_condition="WHERE Currency='SEK'", order_by="value_id")
+
+    # BTC
+    table = s.table6()
+    d["btc"] = fetch_sql(s.db_name2(), table)
+
+    # NordPool
+    table = "NordPool"
+    d["NordPool"] = fetch_sql(s.db_name2(), table, extra_condition="WHERE NOW() BETWEEN start AND end", order_by="value_id")
+
+    # Metals from DB: Example
+    metals_table = "metal_prices"
+    d["gold"] = fetch_sql(s.db_name2(), metals_table, extra_condition="WHERE metal='USDXAU'")
+    d["silver"] = fetch_sql(s.db_name2(), metals_table, extra_condition="WHERE metal='USDXAG'")
+
+    if DEV_MODE:
+        print("...VALUES DICT...")
+        for x in d:
+            print(x, ":", d[x])
+        print(".................")
+
+    return d
+
+
+def main():
+    if os.path.isfile(CACHE_FILE):
+        with open(CACHE_FILE, "r") as f:
+            ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
+            age = (dt.datetime.now() - ts).total_seconds()
+
+    else:
+        age = 901
+
+    while True:
+        if age > 15 * 60:
+            print("Get data")
+            try:
+                data = collect_data()
+            except Exception as e:
+                logging.exception(f"Could not get data. Error:\n{e}")
+                continue
+
+            if data:
+                msg = format_data(data)
+                age = 0  # get a timestamp from db? cache file?
+            else:
+                msg = (f"Could not get data to parse\n"
+                       f"Trying to get new data in 5 minutes "
+                       f"({(dt.datetime.now() + dt.timedelta(minutes=5)).strftime("%H:%M")})")
+                logging.error("Has no data to parse")
+                time.sleep(300)
+
+            write_output(msg)
+            if DEV_MODE:
+                print(".....TXT FILE.....")
+                print(msg)
+                print("..................")
+                break
+        else:
+            print(f"Data is fresh, next update in {round((15 * 60 - age) / 60)} min")
+            if DEV_MODE:
+                print("Delete '../conky_assets/created.txt' to force a re-run")
+                break
+
+        time.sleep((15 * 60) - (age + 1))
+
+
 
 
 if __name__ == "__main__":
-    logging.info("Program started")
-    start()
+    logging.info("Feeder started")
+    main()
