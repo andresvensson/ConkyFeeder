@@ -55,7 +55,7 @@ def save_cache():
 
 
 def format_data(data):
-    print("Constructing data textfile..")
+    #print("Constructing data textfile..")
     # 0
     lines = ["Local Weather"]
 
@@ -139,7 +139,8 @@ def format_data(data):
 
     # 10
     # 1 BTC = 61 938 USD (2.9 %)
-    lines.append(f"1 BTC = {data['btc']['Price']} USD ({data['btc']['percent_change_24']} %)")
+    price = f"{round(data['btc']['Price']):,}".replace(",", " ")
+    lines.append(f"1 BTC = {price} USD ({data['btc']['percent_change_24']} %)")
 
     # 11
     # Gold: 4113 USD/once, Silver: 48 USD/ounce
@@ -257,13 +258,16 @@ def main():
                 print(msg)
                 print("..................")
                 break
+            time.sleep((15 * 60) - (age + 1))
+
         else:
             print(f"Data is fresh, next update in {round((15 * 60 - age) / 60)} min")
+            time.sleep(60)
             if DEV_MODE:
                 print("Delete '../conky_assets/created.txt' to force a re-run")
                 break
 
-        time.sleep((15 * 60) - (age + 1))
+
 
 
 
