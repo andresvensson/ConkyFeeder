@@ -227,10 +227,13 @@ def collect_data():
 
 def main():
     while True:
+        ttl = 10
         if os.path.isfile(CACHE_FILE):
             with open(CACHE_FILE, "r") as f:
                 ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
                 age = (dt.datetime.now() - ts).total_seconds()
+                ttl = (15 * 60) - age
+                ttl += 2
                 print("Cached data is", int(age / 60), "minutes old.")
         else:
             age = 901
@@ -248,7 +251,7 @@ def main():
                 ts_db = data['outside']['time_stamp']
                 age = (dt.datetime.now() - ts_db).total_seconds()
                 ttl = (15 * 60) - age
-                age = ttl + 2
+                ttl += 2
 
                 save_cache(ts_db)
                 print("TTL:", int(ttl / 60), "minutes")
@@ -272,8 +275,8 @@ def main():
             if DEV_MODE:
                 print("Delete '../conky_assets/created.txt' to force a re-run")
                 break
-            time.sleep(10)
-        time.sleep(age)
+        #time.sleep((15 * 60) - age)
+        time.sleep(ttl)
 
 
 
