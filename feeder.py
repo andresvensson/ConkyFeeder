@@ -225,15 +225,14 @@ def collect_data():
 
 
 def main():
-    if os.path.isfile(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
-            ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
-            age = (dt.datetime.now() - ts).total_seconds()
-
-    else:
-        age = 901
-
     while True:
+        if os.path.isfile(CACHE_FILE):
+            with open(CACHE_FILE, "r") as f:
+                ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
+                age = (dt.datetime.now() - ts).total_seconds()
+        else:
+            age = 901
+            
         if age > 15 * 60:
             print("Get data")
             try:
