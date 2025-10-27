@@ -40,18 +40,19 @@ def fetch_sql(db_name, table, column="*", extra_condition="", order_by="id"):
     return result
 
 
-def load_cache():
-    if os.path.isfile(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
-            ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
-            age = (dt.datetime.now() - ts).total_seconds()
-            return {"ts": ts, "age": age, "old": age > 15 * 60}
-    return {"ts": None, "age": None, "old": True}
+# def load_cache():
+#     if os.path.isfile(CACHE_FILE):
+#         with open(CACHE_FILE, "r") as f:
+#             ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
+#             age = (dt.datetime.now() - ts).total_seconds()
+#             return {"ts": ts, "age": age, "old": age > 15 * 60}
+#     return {"ts": None, "age": None, "old": True}
 
 
-def save_cache():
+def save_cache(ts):
     with open(CACHE_FILE, "w") as f:
-        f.write(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        #f.write(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        f.write(ts.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 def format_data(data):
@@ -172,7 +173,7 @@ def format_data(data):
 def write_output(msg):
     with open(DATA_FILE, "w") as f:
         f.write(msg)
-    save_cache()
+    #save_cache()
 
 
 # ------------------- Main -------------------
@@ -230,6 +231,7 @@ def main():
             with open(CACHE_FILE, "r") as f:
                 ts = dt.datetime.strptime(f.read().strip(), "%Y-%m-%d %H:%M:%S")
                 age = (dt.datetime.now() - ts).total_seconds()
+                print("Cached data is", int(age / 60), "minutes old.")
         else:
             age = 901
 
@@ -244,9 +246,12 @@ def main():
             if data:
                 msg = format_data(data)
                 ts_db = data['outside']['time_stamp']
-                ttl = dt.datetime.now() - ts_db
-                age = ttl.total_seconds()
-                #age = 0  # get a timestamp from db? cache file?
+                age = (dt.datetime.now() - ts_db).total_seconds()
+                ttl = (15 * 60) - age
+                age = ttl + 2
+
+                save_cache(ts_db)
+                print("TTL:", int(ttl / 60), "minutes")
             else:
                 msg = (f"Could not get data to parse\n"
                        f"Trying to get new data in 5 minutes "
@@ -255,20 +260,20 @@ def main():
                 time.sleep(300)
 
             write_output(msg)
+
             if DEV_MODE:
                 print(".....TXT FILE.....")
                 print(msg)
                 print("..................")
                 break
-            # TODO get loop timing straight
 
         else:
-            print(f"Data is fresh, next update in {round((15 * 60 - age) / 60)} min")
+            print(f"Data still fresh, next update in {round((15 * 60 - age) / 60)} min")
             if DEV_MODE:
                 print("Delete '../conky_assets/created.txt' to force a re-run")
                 break
             time.sleep(10)
-        time.sleep((15 * 60) - (age + 1))
+        time.sleep(age)
 
 
 
