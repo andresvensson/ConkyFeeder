@@ -262,10 +262,10 @@ def main():
 
         else:
             print(f"Data is fresh, next update in {round((15 * 60 - age) / 60)} min")
-            time.sleep(60)
             if DEV_MODE:
                 print("Delete '../conky_assets/created.txt' to force a re-run")
                 break
+        time.sleep(60)
 
 
 
