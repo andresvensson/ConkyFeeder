@@ -144,7 +144,7 @@ def format_data(data):
 
     # 11
     # Gold: 4113 USD/once, Silver: 48 USD/ounce
-    lines.append(f"Gold: {int(data['gold']['rate'])} USD/once, Silver: {int(data['silver']['rate'])} USD/ounce")
+    lines.append(f"Gold: {int(data['gold']['rate'])} USD/ounce, Silver: {int(data['silver']['rate'])} USD/ounce")
 
     # 12
     # NordPool: 19.42 öre/kWh
@@ -232,7 +232,7 @@ def main():
                 age = (dt.datetime.now() - ts).total_seconds()
         else:
             age = 901
-            
+
         if age > 15 * 60:
             print("Get data")
             try:
@@ -243,7 +243,10 @@ def main():
 
             if data:
                 msg = format_data(data)
-                age = 0  # get a timestamp from db? cache file?
+                ts_db = data['outside']['time_stamp']
+                ttl = dt.datetime.now() - ts_db
+                age = ttl.total_seconds()
+                #age = 0  # get a timestamp from db? cache file?
             else:
                 msg = (f"Could not get data to parse\n"
                        f"Trying to get new data in 5 minutes "
@@ -257,14 +260,15 @@ def main():
                 print(msg)
                 print("..................")
                 break
-            time.sleep((15 * 60) - (age + 1))
+            # TODO get loop timing straight
 
         else:
             print(f"Data is fresh, next update in {round((15 * 60 - age) / 60)} min")
             if DEV_MODE:
                 print("Delete '../conky_assets/created.txt' to force a re-run")
                 break
-        time.sleep(60)
+            time.sleep(10)
+        time.sleep((15 * 60) - (age + 1))
 
 
 
