@@ -74,7 +74,11 @@ def format_data(data):
         #right = f"Kitchen: {data['kitchen']['temperature']}°C"
     else:
         left = ""
-    right = f"Kitchen: {data['kitchen'].get('temperature', "XX")}°C"
+    one_hour_ago = dt.datetime.now() - dt.timedelta(hours=1)
+    if data['kitchen']['time_stamp'] < one_hour_ago:
+        right = "Kitchen: old..."
+    else:
+        right = f"Kitchen: {data['kitchen'].get('temperature', "XX")}°C"
     lines.append(align_lr(left, right))
 
     # 2
@@ -193,7 +197,7 @@ def collect_data():
     d["sovrum"] = fetch_sql(db_name, table, column, order_by = "value_id")
 
     table = "weather_kitchen"
-    d["kitchen"] = fetch_sql(db_name, table, column, order_by = "value_id")
+    d["kitchen"] = fetch_sql(db_name, table, order_by = "value_id")
 
     table = "weather_outside"
     d['outside'] = fetch_sql(db_name, table, order_by="value_id")
