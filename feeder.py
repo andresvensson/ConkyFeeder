@@ -255,7 +255,6 @@ def main():
                 ts_db = data['outside']['time_stamp']
                 age = (dt.datetime.now() - ts_db).total_seconds()
                 ttl = (15 * 60) - age
-                ttl += 2
 
                 save_cache(ts_db)
                 print("TTL:", int(ttl / 60), "minutes")
@@ -279,7 +278,9 @@ def main():
             if DEV_MODE:
                 print("Delete '../conky_assets/created.txt' to force a re-run")
                 break
-        #time.sleep((15 * 60) - age)
+        # avoid negative sleep length
+        if ttl < 1:
+            ttl = 1
         time.sleep(ttl)
 
 
