@@ -70,8 +70,10 @@ def format_data(data):
     #d = data['outside']
     d = data.get('outside', 0)
     if d:
-        left = f"{d['status']}, clouds: {d.get('clouds', 0)}%"
-        #right = f"Kitchen: {data['kitchen']['temperature']}°C"
+        #left = f"{d['status']}, clouds: {d.get('clouds', 0)}%"
+        left = f"{d['status']}"
+        if d['clouds']:
+            left += f", clouds: {d['clouds']}%"
     else:
         left = ""
     one_hour_ago = dt.datetime.now() - dt.timedelta(hours=1)
