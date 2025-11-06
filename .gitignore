@@ -8,6 +8,7 @@ testing.py
 conky_starter.service
 conky_cache_update.sh
 start_conky.sh
+feeder.log
 *.pkl
 venv/
 conky_assets/*
