@@ -67,10 +67,8 @@ def format_data(data):
 
     # 1
     # scattered clouds, clouds: 40%          Kitchen: 23.4°C
-    #d = data['outside']
     d = data.get('outside', 0)
     if d:
-        #left = f"{d['status']}, clouds: {d.get('clouds', 0)}%"
         left = f"{d['status']}"
         if d['clouds']:
             left += f", clouds: {d['clouds']}%"
