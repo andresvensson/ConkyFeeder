@@ -149,7 +149,10 @@ def format_data(data):
 
     # 11
     # Gold: 4113 USD/once, Silver: 48 USD/ounce
-    lines.append(f"Gold: {int(data['gold']['rate'])} USD/ounce, Silver: {int(data['silver']['rate'])} USD/ounce")
+    diff = dt.datetime.now() - data['gold']['timestamp']
+    diff_sec = diff.total_seconds()
+    hrs = (diff_sec / 60) / 60
+    lines.append(f"Gold: {int(data['gold']['rate'])} USD/ounce, Silver: {int(data['silver']['rate'])} USD/ounce, hrs {round(hrs, 1)}")
 
     # 12
     # NordPool: 19.42 öre/kWh
